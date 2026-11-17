@@ -40,6 +40,8 @@ set key title GraphTitle."\n".GraphSubtitle."\n"
 
 set style textbox opaque margins 3.0,3.0 fillcolor rgb "#FFFFFF" border rgb "#000000" linewidth 1.0
 
+FMT = "%Y-%m-%d %H:%M:%S"
+
 HaveAerial = exists("AerialFile")
 HaveXray = exists("XrayFile")
 
@@ -67,17 +69,24 @@ if (exists("SunriseTime")) {
     set object 1 rectangle from first StartTime, graph 0 to first SunriseTime, graph 1 behind fillcolor rgb "#BEBEBE" fillstyle solid 1.0 noborder
     set arrow 1 from first SunriseTime, graph 0 to first SunriseTime, graph 1 nohead lc rgb "#CD853F" lw 2
     set label 1 "Sunrise ".substr(SunriseTime, 12, 16)." UTC" at first SunriseTime, graph 0.30 rotate by 90 offset char 1,0 font "sans,8" front
+    PreMid = strftime(FMT, (strptime(FMT, StartTime) + strptime(FMT, SunriseTime)) / 2)
+    set label 4 "No solar flares\ndetectable\nuntil sunrise" at first PreMid, graph 0.90 center font "sans,8" front boxed
+    set arrow 4 from first StartTime, graph 0.80 to first SunriseTime, graph 0.80 empty size screen 0.02,40,20 lw 2 front
 }
 if (exists("SunsetTime")) {
     set object 2 rectangle from first SunsetTime, graph 0 to first EndTime, graph 1 behind fillcolor rgb "#BEBEBE" fillstyle solid 1.0 noborder
     set arrow 2 from first SunsetTime, graph 0 to first SunsetTime, graph 1 nohead lc rgb "#CD853F" lw 2
     set label 2 "Sunset ".substr(SunsetTime, 12, 16)." UTC" at first SunsetTime, graph 0.30 rotate by 90 offset char -0.5,0 font "sans,8" front
+    PostMid = strftime(FMT, (strptime(FMT, SunsetTime) + strptime(FMT, EndTime)) / 2)
+    set label 5 "No solar flares\ndetectable\nafter sunset" at first PostMid, graph 0.90 center font "sans,8" front boxed
+    set arrow 5 from first EndTime, graph 0.80 to first SunsetTime, graph 0.80 empty size screen 0.02,40,20 lw 2 front
 }
 
 # Transmitter daily off-air window annotation
 if (exists("OffAirStart")) {
     set arrow 3 from first OffAirStart, 1.0 to first OffAirEnd, 1.0 heads size screen 0.008,90 lw 2 front
-    set label 3 OffAirLabel at first OffAirMid, 2.2 center font "sans,8" front boxed
+    set label 3 OffAirLabel at first OffAirMid, graph 0.70 center font "sans,8" front boxed
+    set arrow 6 from first OffAirMid, graph 0.66 to first OffAirMid, 1.15 lw 1 front
 }
 
 # Build the plot command from whichever data files exist
@@ -91,11 +100,15 @@ if (HaveXray) {
     cmd = cmd . sep . sprintf("'%s' using 1:5 axes x1y2 with lines lc rgb '#FF0000' lw 1 title 'NOAA GOES X-ray (0.1-0.8nm)'", XrayFile)
     sep = ", "
 }
-# Flare markers sit on the X-ray (y2) axis, so need the X-ray axis configured
+# Flare markers sit on the X-ray (y2) axis, so need the X-ray axis configured.
+# Dotted vertical bars at the flare begin and end times with the maximum
+# class labelled above the begin time.
 if (exists("FlareFile") && HaveXray) {
-    cmd = cmd . sep . sprintf("'%s' using 4:6 axes x1y2 with points pt 7 ps 0.6 lc rgb '#0000FF' title 'Solar flare max (class)'", FlareFile)
+    cmd = cmd . sep . sprintf("'%s' using 1:($6/5):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' title 'Solar flare start/end with class'", FlareFile)
     sep = ", "
-    cmd = cmd . sep . sprintf("'%s' using 4:($6*2.5):5 axes x1y2 with labels font 'sans,7' textcolor rgb '#0000FF' notitle", FlareFile)
+    cmd = cmd . sep . sprintf("'%s' using 7:($6/5):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' notitle", FlareFile)
+    sep = ", "
+    cmd = cmd . sep . sprintf("'%s' using 1:($6*5):5 axes x1y2 with labels font 'sans,7' textcolor rgb '#0000FF' offset 0,0.6 notitle", FlareFile)
     sep = ", "
 }
 

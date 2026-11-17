@@ -37,6 +37,8 @@ AERIALS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'aerials.ini')
 LOGFILE_NAME = 'logfile.log'
 LOGERROR_NAME = 'logerror.log'
 
+TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
 USER_AGENT = 'UKRAA-VLF/1.0'
 REQUEST_TIMEOUT = 30        # seconds per request
 RETRIES = 3                 # attempts before giving up
@@ -153,6 +155,35 @@ def load_aerials():
             'off_air': parser.get(section, 'off_air', fallback='').strip(),
         })
     return {'adc': adc, 'stations': stations}
+
+
+def read_sun_times(data_path, day):
+    """Sunrise and sunset timestamp strings from the daily sun file written
+    by GetDataSun.py, or (None, None)."""
+    path = os.path.join(data_path, 'Sun', f'{day:%Y}',
+                        f'{day:%Y-%m}', f'{day:%Y-%m-%d}.csv')
+    if not os.path.isfile(path):
+        return None, None
+    with open(path) as sun_file:
+        fields = sun_file.readline().strip().split(',')
+    if len(fields) >= 4 and fields[1] == 'sunrise' and fields[3] == 'sunset':
+        return fields[0], fields[2]
+    return None, None
+
+
+def off_air_window(text, day):
+    """Parse an "HH:MM-HH:MM" off-air window for the given date into
+    (start, end, midpoint) timestamp strings, or None."""
+    try:
+        start_text, end_text = (part.strip() for part in text.split('-'))
+        start = datetime.strptime(start_text, '%H:%M')
+        end = datetime.strptime(end_text, '%H:%M')
+    except ValueError:
+        return None
+    mid = start + (end - start) / 2
+    return (f'{day:%Y-%m-%d} {start_text}:00',
+            f'{day:%Y-%m-%d} {end_text}:00',
+            f'{day:%Y-%m-%d} {mid:%H:%M}:00')
 
 
 def fetch_json(url, logfiles_path, source_name):

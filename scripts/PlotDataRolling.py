@@ -39,10 +39,10 @@
 import os
 import subprocess
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
-from vlf_common import (load_aerials, load_paths, log_error, log_message,
-                        utc_now)
+from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
+                        log_message, off_air_window, read_sun_times, utc_now)
 
 SOURCE = 'PlotDataRolling.py'
 
@@ -51,8 +51,6 @@ TEMPLATE = os.path.join(SCRIPT_DIR, 'PlotRolling.gp')
 # gnuplot executable - override with VLF_GNUPLOT for testing
 GNUPLOT = os.environ.get('VLF_GNUPLOT', 'gnuplot')
 GNUPLOT_TIMEOUT = 120  # seconds
-
-TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def gp_path(path):
@@ -68,6 +66,58 @@ def xray_file(data_path, day):
 def aerial_file(data_path, callsign, day):
     return os.path.join(data_path, 'Aerial', callsign, f'{day:%Y}',
                         f'{day:%Y-%m}', f'{day:%Y-%m-%d}.csv')
+
+
+def flare_file(data_path, day):
+    return os.path.join(data_path, 'NOAA_xray_flares', f'{day:%Y}',
+                        f'{day:%Y-%m}', f'{day:%Y-%m-%d}.csv')
+
+
+def parse_time(text):
+    return datetime.strptime(text, TIME_FORMAT).replace(tzinfo=timezone.utc)
+
+
+def sun_events(data_path, days):
+    """Sunrise/sunset datetimes for each day in the window.
+
+    A day without sun data borrows the other day's times shifted to its own
+    date (sun times drift by ~1 minute per day). Returns {day: (rise, set)}.
+    """
+    found = {}
+    for day in days:
+        sunrise, sunset = read_sun_times(data_path, day)
+        if sunrise and sunset:
+            try:
+                found[day] = (parse_time(sunrise), parse_time(sunset))
+            except ValueError:
+                pass
+    if not found:
+        return {}
+    source_day, source_times = next(iter(found.items()))
+    complete = {}
+    for day in days:
+        if day in found:
+            complete[day] = found[day]
+        else:
+            shift = day - source_day
+            complete[day] = (source_times[0] + shift, source_times[1] + shift)
+    return complete
+
+
+def night_intervals(start, end, daylight):
+    """Periods within [start, end] outside the given daylight intervals."""
+    nights = []
+    current = start
+    for sunrise, sunset in sorted(daylight):
+        if sunrise > current:
+            nights.append((current, min(sunrise, end)))
+        current = max(current, sunset)
+        if current >= end:
+            break
+    if current < end:
+        nights.append((current, end))
+    return [(night_start, night_end) for night_start, night_end in nights
+            if night_end > night_start]
 
 
 def run_gnuplot(assigns, logfiles_path, output_name):
@@ -106,6 +156,36 @@ def main():
 
     xray_files = [path for path in (xray_file(data_path, day)
                                     for day in days) if os.path.isfile(path)]
+    flare_files = [path for path in (flare_file(data_path, day)
+                                     for day in days) if os.path.isfile(path)]
+
+    # Night shading and sunrise/sunset marks, clipped to the 24-hour window
+    common_assigns = []
+    sun = sun_events(data_path, days)
+    if sun:
+        nights = night_intervals(start, now, list(sun.values()))
+        if nights:
+            common_assigns.append(f'NightCount={len(nights)}')
+            for index, (night_start, night_end) in enumerate(nights, 1):
+                common_assigns.append(
+                    f"Night{index}Start='{night_start:{TIME_FORMAT}}'")
+                common_assigns.append(
+                    f"Night{index}End='{night_end:{TIME_FORMAT}}'")
+        marks = []
+        for day in sorted(sun):
+            sunrise, sunset = sun[day]
+            if start <= sunrise <= now:
+                marks.append((sunrise, f'Sunrise {sunrise:%H:%M} UTC'))
+            if start <= sunset <= now:
+                marks.append((sunset, f'Sunset {sunset:%H:%M} UTC'))
+        if marks:
+            common_assigns.append(f'SunMarkCount={len(marks)}')
+            for index, (when, label) in enumerate(marks, 1):
+                common_assigns.append(
+                    f"SunMark{index}Time='{when:{TIME_FORMAT}}'")
+                common_assigns.append(f"SunMark{index}Label='{label}'")
+    for index, path in enumerate(flare_files, 1):
+        common_assigns.append(f"FlareFile{index}='{gp_path(path)}'")
 
     stations = load_aerials()['stations']
     if not stations:
@@ -120,7 +200,7 @@ def main():
             f"EndTime='{now:{TIME_FORMAT}}'",
             f"GraphSubtitle='Rolling 24 hours to {now:%H:%M} UTC "
             f"- updated every 5 minutes'",
-        ]
+        ] + common_assigns
         have_data = False
 
         if station:
@@ -137,6 +217,25 @@ def main():
                 have_data = True
                 assigns.append(f"AerialTitle='{station['callsign']} "
                                f"VLF ({khz:g} kHz)'")
+                # Off-air annotation only when monitoring this station with data
+                if station['off_air']:
+                    windows = []
+                    for day in days:
+                        window = off_air_window(station['off_air'], day)
+                        if window is None:
+                            continue
+                        window_start = parse_time(window[0])
+                        window_end = parse_time(window[1])
+                        if window_end > start and window_start < now:
+                            windows.append(window)
+                    if windows:
+                        assigns.append(f'OffAirCount={len(windows)}')
+                        for index, window in enumerate(windows, 1):
+                            assigns.append(f"OffAir{index}Start='{window[0]}'")
+                            assigns.append(f"OffAir{index}End='{window[1]}'")
+                            assigns.append(f"OffAir{index}Mid='{window[2]}'")
+                        assigns.append(f"OffAirLabel='{station['callsign']} "
+                                       f"off-air {station['off_air']} UTC'")
             else:
                 log_message(logfiles_path, SOURCE,
                             f'No aerial data for {station["callsign"]} yet '

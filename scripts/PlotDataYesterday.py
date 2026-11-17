@@ -36,10 +36,10 @@
 import os
 import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from vlf_common import (load_aerials, load_paths, log_error, log_message,
-                        utc_now)
+from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
+                        log_message, off_air_window, read_sun_times, utc_now)
 
 SOURCE = 'PlotDataYesterday.py'
 
@@ -48,8 +48,6 @@ TEMPLATE = os.path.join(SCRIPT_DIR, 'PlotYesterday.gp')
 # gnuplot executable - override with VLF_GNUPLOT for testing
 GNUPLOT = os.environ.get('VLF_GNUPLOT', 'gnuplot')
 GNUPLOT_TIMEOUT = 120  # seconds
-
-TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
 def gp_path(path):
@@ -60,33 +58,6 @@ def gp_path(path):
 def day_file(data_path, *parts, day):
     return os.path.join(data_path, *parts, f'{day:%Y}',
                         f'{day:%Y-%m}', f'{day:%Y-%m-%d}.csv')
-
-
-def read_sun_times(data_path, day):
-    """Sunrise and sunset timestamps from the daily sun file, or (None, None)."""
-    path = day_file(data_path, 'Sun', day=day)
-    if not os.path.isfile(path):
-        return None, None
-    with open(path) as sun_file:
-        fields = sun_file.readline().strip().split(',')
-    if len(fields) >= 4 and fields[1] == 'sunrise' and fields[3] == 'sunset':
-        return fields[0], fields[2]
-    return None, None
-
-
-def off_air_window(text, day):
-    """Parse an "HH:MM-HH:MM" off-air window into full timestamps plus the
-    window midpoint (for label placement), or None."""
-    try:
-        start_text, end_text = (part.strip() for part in text.split('-'))
-        start = datetime.strptime(start_text, '%H:%M')
-        end = datetime.strptime(end_text, '%H:%M')
-    except ValueError:
-        return None
-    mid = start + (end - start) / 2
-    return (f'{day:%Y-%m-%d} {start_text}:00',
-            f'{day:%Y-%m-%d} {end_text}:00',
-            f'{day:%Y-%m-%d} {mid:%H:%M}:00')
 
 
 def run_gnuplot(assigns, logfiles_path, output_name):
@@ -141,6 +112,11 @@ def main():
             f"GraphSubtitle='{yesterday:%A %d %B %Y} "
             f"- updated daily at 00:20 UTC'",
         ]
+        # Sun shading shows when this station could have detected flares,
+        # so include it even while only X-ray data is plotted
+        if sunrise and sunset:
+            assigns.append(f"SunriseTime='{sunrise}'")
+            assigns.append(f"SunsetTime='{sunset}'")
         have_data = False
 
         if station:
@@ -155,10 +131,7 @@ def main():
                 assigns.append(f"AerialFile='{gp_path(aerial_path)}'")
                 assigns.append(f"AerialTitle='{station['callsign']} "
                                f"VLF ({khz:g} kHz)'")
-                # Sun shading and off-air window only make sense on VLF plots
-                if sunrise and sunset:
-                    assigns.append(f"SunriseTime='{sunrise}'")
-                    assigns.append(f"SunsetTime='{sunset}'")
+                # Off-air annotation only when monitoring this station with data
                 window = off_air_window(station['off_air'], yesterday)
                 if window:
                     assigns.append(f"OffAirStart='{window[0]}'")
