@@ -51,7 +51,7 @@ def utc_now():
 def load_paths():
     """Return the [paths] settings from vlf.ini, with sensible defaults.
 
-    Keys returned: home, data, logfiles, scripts.
+    Keys returned: home, data, logfiles, scripts, temp.
     """
     parser = configparser.ConfigParser()
     parser.read(CONFIG_FILE)
@@ -64,6 +64,8 @@ def load_paths():
                                fallback=os.path.join(home, 'logfiles')),
         'scripts': parser.get('paths', 'scripts',
                               fallback=os.path.join(home, 'scripts')),
+        'temp': parser.get('paths', 'temp',
+                           fallback=os.path.join(home, 'temp')),
     }
 
 

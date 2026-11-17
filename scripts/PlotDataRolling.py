@@ -23,7 +23,7 @@
 #   <data>/Aerial/<CALLSIGN>/YYYY/YYYY-MM/YYYY-MM-DD.csv
 # with records: yyyy-mm-dd hh:mm:ss,voltage
 #
-# Plots are written to <data>/WWWupload/ :
+# Plots are written to the temp folder (<home>/temp/ by default):
 #   VLFrolling<frequency_hz>.png  (one per station)
 #   NOAAxraysRolling.png          (when no stations are configured)
 #
@@ -101,7 +101,7 @@ def main():
     if now.date() != start.date():
         days.append(now.date())
 
-    www_path = os.path.join(data_path, 'WWWupload')
+    www_path = paths['temp']
     os.makedirs(www_path, exist_ok=True)
 
     xray_files = [path for path in (xray_file(data_path, day)

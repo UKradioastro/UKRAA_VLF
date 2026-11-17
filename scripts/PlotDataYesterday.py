@@ -19,8 +19,8 @@
 # produced instead. Missing data files are tolerated - the plot simply
 # omits that trace.
 #
-# Plots are written to <data>/WWWupload/ (current, overwritten daily) and a
-# date-stamped copy to <data>/Plots/ (archive):
+# Plots are written to the temp folder (<home>/temp/ by default; current,
+# overwritten daily) and a date-stamped copy to <data>/Plots/ (archive):
 #   VLFplot<frequency_hz>.png / VLFplot<frequency_hz>-YYYYMMDD.png
 #   NOAAxraysYesterday.png    / NOAAxraysYesterday-YYYYMMDD.png
 #
@@ -118,7 +118,7 @@ def main():
     start = f'{yesterday:%Y-%m-%d} 00:00:00'
     end = f'{yesterday + timedelta(days=1):%Y-%m-%d} 00:00:00'
 
-    www_path = os.path.join(data_path, 'WWWupload')
+    www_path = paths['temp']
     plots_path = os.path.join(data_path, 'Plots')
     os.makedirs(www_path, exist_ok=True)
     os.makedirs(plots_path, exist_ok=True)
