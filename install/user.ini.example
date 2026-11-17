@@ -5,7 +5,7 @@
 ; used to fetch sunrise/sunset times from https://sunrise-sunset.org
 ;
 ; Note: North = +ve and South = -ve
-;       East = +ve and west = -ve
+;       East = +ve and West = -ve
 
 [location]
 name = your_location e.g. London

@@ -32,6 +32,7 @@ DEFAULT_HOME = '/home/pi/UKRAA-VLF/'
 CONFIG_FILE = os.environ.get(
     'VLF_CONFIG', os.path.join(DEFAULT_HOME, 'config', 'vlf.ini'))
 USER_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'user.ini')
+AERIALS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'aerials.ini')
 
 LOGFILE_NAME = 'logfile.log'
 LOGERROR_NAME = 'logerror.log'
@@ -101,6 +102,55 @@ def load_user():
         'latitude': parser.getfloat('location', 'latitude', fallback=None),
         'longitude': parser.getfloat('location', 'longitude', fallback=None),
     }
+
+
+def load_aerials():
+    """Return the ADC settings and configured stations from aerials.ini.
+
+    Returns {'adc': {...}, 'stations': [...]} where each station is
+    {'channel', 'callsign', 'frequency_hz', 'off_air'}. Channels with a
+    blank callsign or frequency (no receiver connected) are omitted.
+    """
+    parser = configparser.ConfigParser()
+    parser.read(AERIALS_FILE)
+
+    def get_int(section, key, fallback):
+        text = parser.get(section, key, fallback='').strip()
+        try:
+            return int(text)
+        except ValueError:
+            return fallback
+
+    adc = {
+        'address_1': parser.get('MCP3424', 'address_1', fallback='0x68'),
+        'address_2': parser.get('MCP3424', 'address_2', fallback='0x69'),
+        'resolution': get_int('MCP3424', 'resolution', 18),
+        'gain': get_int('MCP3424', 'gain', 1),
+        'samples': get_int('MCP3424', 'samples', 15),
+        'trim': get_int('MCP3424', 'trim', 5),
+    }
+
+    stations = []
+    for channel in range(1, 9):
+        section = f'channel_{channel}'
+        if not parser.has_section(section):
+            continue
+        callsign = parser.get(section, 'callsign', fallback='').strip()
+        frequency_text = parser.get(section, 'frequency_hz',
+                                    fallback='').strip()
+        if not callsign or not frequency_text:
+            continue
+        try:
+            frequency_hz = int(frequency_text)
+        except ValueError:
+            continue
+        stations.append({
+            'channel': channel,
+            'callsign': callsign,
+            'frequency_hz': frequency_hz,
+            'off_air': parser.get(section, 'off_air', fallback='').strip(),
+        })
+    return {'adc': adc, 'stations': stations}
 
 
 def fetch_json(url, logfiles_path, source_name):

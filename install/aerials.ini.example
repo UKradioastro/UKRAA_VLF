@@ -1,0 +1,62 @@
+; UKRAA VLF aerials / receiver configuration
+; Copy to /home/pi/UKRAA-VLF/config/aerials.ini and adjust for your set-up.
+;
+; [MCP3424] - the ADC Pi board (two MCP3424 chips, 8 channels total)
+;   address_1  : I2C address of the first chip (channels 1-4)
+;   address_2  : I2C address of the second chip (channels 5-8)
+;   resolution : ADC bit resolution - 12, 14, 16 or 18
+;   gain       : PGA gain - 1, 2, 4 or 8
+;   samples    : number of readings taken per sample (e.g. 15)
+;   trim       : readings removed from the top AND the bottom of the sorted
+;                readings before averaging the remainder (e.g. 15 samples
+;                with trim 5 -> middle 5 readings averaged). Must satisfy
+;                samples > 2 * trim.
+;
+; [channel_1] to [channel_8] - one section per ADC channel
+;   callsign     : transmitter callsign (blank = no receiver connected)
+;   frequency_hz : transmitter frequency in Hz (blank = no receiver connected)
+;   off_air      : optional daily off-air window "HH:MM-HH:MM" UTC, shown as
+;                  an annotation on the plots
+;
+; A channel is plotted/recorded only if BOTH callsign and frequency_hz are set.
+
+[MCP3424]
+address_1 = 0x68
+address_2 = 0x69
+resolution = 18
+gain = 1
+samples = 15
+trim = 5
+
+[channel_1]
+callsign = DHO38
+frequency_hz = 23400
+off_air = 07:00-08:00
+
+[channel_2]
+callsign =
+frequency_hz =
+
+[channel_3]
+callsign =
+frequency_hz =
+
+[channel_4]
+callsign =
+frequency_hz =
+
+[channel_5]
+callsign =
+frequency_hz =
+
+[channel_6]
+callsign =
+frequency_hz =
+
+[channel_7]
+callsign =
+frequency_hz =
+
+[channel_8]
+callsign =
+frequency_hz =
