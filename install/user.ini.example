@@ -3,8 +3,11 @@
 ;
 ; latitude/longitude are in decimal degrees (south/west negative) and are
 ; used to fetch sunrise/sunset times from https://sunrise-sunset.org
+;
+; Note: North = +ve and South = -ve
+;       East = +ve and west = -ve
 
 [location]
-name = N15 London UK
-latitude = 51.587222
-longitude = -0.095000
+name = your_location e.g. London
+latitude = xx.xxxxx
+longitude = xx.xxxxx
