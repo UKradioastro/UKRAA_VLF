@@ -1,0 +1,49 @@
+# UKRAA VLF crontab entries
+#
+# NOTE: the Pi should have its timezone set to UTC so cron times match the
+# UTC timestamps used in all data and log files.
+#
+# Paths assume the installation lives in /home/pi/UKRAA-VLF - adjust if
+# installed elsewhere.
+
+# ------------------------------------------------------------------------------------------
+# Data collection
+# ------------------------------------------------------------------------------------------
+
+# cron entry to fetch NOAA GOES primary X-ray flux data every 5 minutes
+# (script writes its own entries to logfile.log / logerror.log in UTC)
+*/5 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataNOAAxrays.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# cron entry to fetch NOAA GOES primary X-ray flare events every 5 minutes
+*/5 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataNOAAxrayFlares.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# cron entry to fetch sunrise/sunset times for the day ahead - daily at 00:05 UTC
+05 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataSun.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# ------------------------------------------------------------------------------------------
+# Housekeeping
+# ------------------------------------------------------------------------------------------
+
+# cron entry to restart the VLF aerial capture service if data has stalled - every 10 minutes
+#*/10 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/RestartGetAerialData.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# cron entry to manage (rotate/trim) logfiles - Sunday 00:30 each week
+30 00 * * 00 /bin/bash /home/pi/UKRAA-VLF/scripts/manageLogfiles.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# ------------------------------------------------------------------------------------------
+# Plotting
+# ------------------------------------------------------------------------------------------
+
+# cron entry to refresh the rolling 24-hour plots (VLF + X-ray) every 5 minutes,
+# offset 2 minutes after the data fetches
+#2-59/5 * * * * /bin/bash /home/pi/UKRAA-VLF/scripts/plotRollingData.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# cron entry to create yesterday's plots (VLF SID + X-ray) - daily at 00:20 UTC
+#20 00 * * * /bin/bash /home/pi/UKRAA-VLF/scripts/plotYesterdayData.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# ------------------------------------------------------------------------------------------
+# Publishing
+# ------------------------------------------------------------------------------------------
+
+# cron entry to upload plots and web assets to WWW - daily at 00:45 UTC
+#45 00 * * * /bin/bash /home/pi/UKRAA-VLF/scripts/uploadWWW.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
