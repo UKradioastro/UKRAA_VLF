@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head -->
+<head>
+<title>UKRAA VLF SID detector system</title>
+<link rel="icon" type="image/x-icon" href="./images/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="300">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!-- Style -->
+<style>
+body {font-family: "Lato", sans-serif}
+.mySlides {display: none}
+.status-banner {color: #fff; margin: 0 auto; max-width: 960px; padding: 18px 20px; text-align: left}
+.status-banner.quiet {background: #2f6f44}
+.status-banner.yellow {background: #b8860b}
+.status-banner.amber {background: #cc7000}
+.status-banner.red {background: #9f2d2d}
+.status-banner.unknown {background: #4a5568}
+.status-banner.stale {background: #5d4037}
+.status-banner h3 {text-align: center}
+.status-meta {font-size: 0.95rem; margin: 8px 0 0}
+.graph-frame {margin-left: auto; margin-right: auto; max-width: 800px; width: 100%}
+.graph-frame img {display: block; margin-left: auto; margin-right: auto; max-width: 800px}
+.optional-graph-section {display: none}
+.optional-graph-card {display: none}
+.period-placeholder {border: 1px solid #777; margin: 16px auto; max-width: 800px; padding: 24px; text-align: center}
+.period-plot-title {margin: 32px 0 8px}
+</style>
+<!-- End of Style -->
+</head>
+<!-- End of Head -->
+
+<!-- Body -->
+<body>
+
+<!-- Navbar -->
+<div class="w3-top">
+  <div class="w3-bar w3-black w3-card">
+    <a class="w3-bar-item w3-button w3-padding-large w3-hide-medium w3-hide-large w3-right" href="javascript:void(0)" onclick="myFunction()" title="Toggle Navigation Menu"><i class="fa fa-bars"></i></a>
+    <a href="#home" class="w3-bar-item w3-button w3-padding-large">HOME</a>
+    <a href="#who" class="w3-bar-item w3-button w3-padding-large w3-hide-small">ABOUT US</a>
+    <a href="#detector" class="w3-bar-item w3-button w3-padding-large w3-hide-small">SID DETECTOR</a>
+    <div class="w3-dropdown-hover w3-hide-small">
+      <button class="w3-padding-large w3-button" title="More">GRAPHS <i class="fa fa-caret-down"></i></button>     
+      <div class="w3-dropdown-content w3-bar-block w3-card-4">
+        <a href="#rolling" class="w3-bar-item w3-button">ROLLING STATUS</a>
+        <a href="#daily_Act" class="w3-bar-item w3-button">DAY ACTIVITY GRAPHS</a>
+        <a href="#periods" class="w3-bar-item w3-button" id="navPeriods" style="display:none">LONG PERIOD GRAPHS</a>
+      </div>
+    </div>
+    <a href="#contact" class="w3-bar-item w3-button w3-padding-large w3-hide-small">CONTACT</a>
+  </div>
+</div>
+
+<!-- Navbar on small screens (remove the onclick attribute if you want the navbar to always show on top of the content when clicking on the links) -->
+<div id="navDemo" class="w3-bar-block w3-black w3-hide w3-hide-large w3-hide-medium w3-top" style="margin-top:46px">
+  <a href="#who" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">ABOUT US</a>
+  <a href="#detector" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">SID DETECTOR</a>
+  <a href="#rolling" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">ROLLING STATUS</a>
+  <a href="#daily_Act" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">DAY ACTIVITY GRAPHS</a>
+  <a href="#periods" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()" id="navDemoPeriods" style="display:none">LONG PERIOD GRAPHS</a>
+</div>
+<!-- End of Navbar -->
+
+<!-- Page content -->
+<div class="w3-content" style="max-width:2000px;margin-top:46px" id="home">
+
+  <!-- Automatic Slideshow Images -->
+  <div class="mySlides w3-display-container w3-center">
+    <img src="./images/Header.png" alt="banner" style="width:100%">
+    <div class="w3-display-bottomtop w3-container w3-text-white w3-padding-32 w3-hide-small">
+      <h3>Aurora generation</h3>
+    </div>
+  </div>
+
+  <!-- Who we are... -->
+  <div class="w3-white" id="who">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:800px">
+      <h2 class="w3-wide">UKRAA</h2>
+      <h3 class="w3-left-align">About us</h3>
+      <p class="w3-left-align"><b><i>Origins</i></b></p>
+      <p class="w3-justify">The UK Radio Astronomy Association was established in 2008 as a registered charity (registration no 1123866) in the United Kingdom. UKRAA’s objectives are to promote the science of radio astronomy and all branches of radio astronomical research. Prior to UKRAA’s formation, British Astronomical Association’s Radio Astronomy Group (RAG) members had designed and built working protypes of a VLF Receiver and Magnetometer. UKRAA was set up to handle the manufacture and sale of these products and the production of technical manuals covering the use of the products and the background science.</p>
+      <p class="w3-left-align"><b><i>Not for profit</i></b></p>
+      <p class="w3-justify">UKRAA is a not for profit business. Any surplus income funds the development of new products and our outreach activities. To keep our prices low UKRAA relies on the volunteers and Trustees giving their time.</p>
+      <p class="w3-left-align"><b><i>Activities</i></b></p>
+      <p class="w3-justify">Our primary activity is to supply equipment to amateur astronomers and other interested researchers. The design of new products and the manufacture of equipment for sale is all carried out by volunteers. To promote radio astronomy to amateur astronomers we give talks to local Astronomical Societies and amateur radio clubs and have provided support to schools and university departments on educational projects.</p>
+    </div>
+  </div>
+  
+  <!-- Detector Section -->
+  <div class="w3-black" id="detector"> 
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:800px">
+      <h2 class="w3-wide">THE SID DETECTOR</h2>
+      <p class="w3-opacity"><i>Detecting sudden ionospheric disturbances from the comfort of your armchair</i></p>
+      <p class="w3-justify">The <b>UKRAA VLF Receiver</b> is designed to record <b>Sudden Ionospheric Disturbances</b> (SIDs) induced by solar flares. It does this by monitoring transmissions from Earth-based beacons, which are affected by changes in the ionosphere, giving an indirect indication of events on the Sun. The main motivation for this work is to correlate these radio observations of solar activity with those from optical observers, and to follow the cycles of sunspots as they appear on the Sun.</p>
+      <p class="w3-justify">The <b>UKRAA VLF Receiver</b> output is a voltage varying with time, which may be fed to a data logger.</p>
+      <p class="w3-justify">The <b>UKRAA VLF Receiver</b> has a tuning range of about 12kHz to 35kHz, requires a supply of 15v DC at 35mA, and provides an output signal at 0 to 2.5 Volts or 0 to 5Volts.  It is designed to work with the <b>UKRAA VLF loop Aerial</b> and the <b>UKRAA VLF Aerial Tuning Unit</b>.</p>
+      <p class="w3-justify">The <b>UKRAA VLF Receiver</b> (in kit form: Part number UKR002; built and tuned to 23.4kHz: Part number UKR003; built and tuned in Enclosure: Part number UKR004), a <b>UKRAA VLF loop Aerial</b> (in kit form: Part number UKR005/UKR006; built: Part number UKR007) and a <b>UKRAA VLF Aerial Tuning Unit</b> (Part number UKR008) are available from our website at ukraa.com. You may also find the <b>UKRAA VLF Multi Frequency Signal Generator</b> (Part number UKR011) useful during tuning of the system.</p>
+      <p class="w3-justify">The <b>UKRAA VLF loop Aerial</b> is designed to receive VLF radio transmissions at suitable frequencies for the <b>UKRAA VLF Receiver</b>.  It is used in conjunction with a tuning unit such as the <b>UKRAA VLF Aerial Tuning Unit</b>, to form a <i>parallel tuned circuit</i> providing an input signal to the <b>UKRAA VLF Receiver</b> in the frequency range 15-35 kHz.</p>
+      <p class="w3-justify">The <b>UKRAA VLF loop Aerial</b> needs to be tuned via the <b>UKRAA VLF Aerial Tuning Unit</b> to the required VLF frequency.</p>
+      <p class="w3-justify">The VLF Aerial Tuning Unit (ATU) is designed to provide a means of tuning a VLF loop aerial over a wide range (50 pF to 3500 pF) of capacitances.  The ATU uses a switchable bank of fixed value capacitors and a variable tuning capacitor.</p>
+      <p class="w3-justify">When used in conjunction with the UKRAA VLF Aerial, it will form a <i>parallel tuned circuit</i> to provide an input signal to the VLF Receiver in the frequency range 15-35 kHz, enabling the latter to receive VLF radio transmissions at suitable frequencies.</p>
+      <p class="w3-justify">The ATU is a passive device and does not require a power supply.</p>
+      <p class="w3-justify">The Multi Frequency Signal Generator has been designed to provide a local signal source for tuning the VLF receiver and the loop aerial to the frequency of one of various military transmitters at such a range that its signal will normally provide useful ionospheric responses in the event of a Solar flare.</p>
+      <p class="w3-justify">It allows the user to simulate VLF signals locally, facilitating the tuning and calibration of the VLF receiver and loop aerial without relying solely on distant transmitters.</p>
+      <p class="w3-justify">Full software is available to record, process and plot events and display on your local intranet using a Raspberry Zero 2W.</p>
+      <div class="w3-row w3-padding-32">
+      <p>UKRAA VLF SID detector system</p>
+      <img src="./images/UKRAA_VLF.png" class="w3-round w3-margin-bottom" alt="banner" style="width:100%">
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Graphs Section -->
+  <div class="w3-grey" id="rolling">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:960px">
+      <h2 class="w3-wide">ROLLING VLF STATUS</h2>
+      <p class="w3-center">24-hour rolling plots refreshed every 5 minutes</p>
+      <div id="alertBanner" class="status-banner unknown">
+        <h3 id="alertTitle" style="margin:0 0 8px">Rolling status unavailable</h3>
+        <p id="alertSummary" style="margin:0">Waiting for the latest rolling status file.</p>
+        <p id="alertMeta" class="status-meta">Status JSON: unavailable</p>
+      </div>
+      <div class="w3-row">
+        <div class="w3-auto graph-frame">
+          <img src="./temp/rolling/RollingActivity.png" data-refresh-src="./temp/rolling/RollingActivity.png" onerror="showDefaultImage(this)" class="w3-margin-bottom" alt="rolling activity plot" style="width:100%">
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- daily Activity plots -->
+  <div class="w3-white" id="daily_Act">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:800px">
+    <h2 class="w3-wide">MY DAILY ACTIVITY RESULTS</h2>
+    <p class="w3-center">This data is from my <b>VLF</b> receiver</p>
+    <p class="w3-center">No accuracy is claimed for any published data</p>
+	</div>
+    <div class="w3-row w3-padding-32">
+      <div class="w3-auto graph-frame">
+        <img src="./temp/yesterday/Activity.png" data-refresh-src="./temp/yesterday/Activity.png" onerror="showDefaultImage(this)" class="w3-round w3-margin-bottom" alt="daily variation plot" style="width:100%">
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Optional week-to-year VLF activity plots -->
+  <div class="w3-white optional-graph-section" id="periods">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:960px">
+      <h2 class="w3-wide">LONG PERIOD VLF RESULTS</h2>
+      <p class="w3-center">Daily aggregates shown across completed UTC days.</p>
+      <div id="periodPlotCards"></div>
+    </div>
+  </div>
+
+  <!-- The Contact Section -->
+  <div class="w3-grey" id="contact">
+    <div class="w3-container w3-content w3-padding-64" style="max-width:800px" >
+      <h2 class="w3-wide w3-center">CONTACT</h2>
+      <p class="w3-opacity w3-center"><i>Want more info? Contact us!</i></p>
+      <div class="w3-row w3-padding-32">
+        <div class="w3-col m6 w3-large w3-margin-bottom">
+          <i class="fa fa-map-marker" style="width:30px"></i>Location:  UK<br>
+          <i class="fa fa-search" style="width:30px"></i> WWW:  <a href="https://ukraa.com/store/categories/vlf-range" target="_blank">ukraa.com</a><br>
+          <i class="fa fa-envelope" style="width:30px"> </i> Email:  <a href="mailto:vlf@ukraa.com?subject=VLF%20question%20from%20webpage...">vlf@ukraa.com</a><br>
+        </div>
+        <div class="w3-col m6">
+          <div class="w3-third">
+            <img src="./images/UKRAA_logo_black.png" class="w3-round" alt="logo" style="width:100%">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- End of Page Content -->
+
+<!-- Scripts -->
+<script>
+// Automatic Slideshow - change image every 4 seconds
+var myIndex = 0;
+carousel();
+
+function carousel() {
+  var i;
+  var x = document.getElementsByClassName("mySlides");
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";  
+  }
+  myIndex++;
+  if (myIndex > x.length) {myIndex = 1}    
+  x[myIndex-1].style.display = "block";  
+  setTimeout(carousel, 4000);    
+}
+
+// Used to toggle the menu on small screens when clicking on the menu button
+function myFunction() {
+  var x = document.getElementById("navDemo");
+  if (x.className.indexOf("w3-show") == -1) {
+    x.className += " w3-show";
+  } else { 
+    x.className = x.className.replace(" w3-show", "");
+  }
+}
+
+// When the user clicks anywhere outside of the modal, close it
+var modal = document.getElementById('ticketModal');
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+function formatAlertTitle(level, isStale) {
+  if (isStale) {
+    return "Rolling data stale";
+  }
+
+  if (level === "red") {
+    return "RED alert: high geomagnetic activity";
+  }
+
+  if (level === "amber") {
+    return "AMBER alert: significant geomagnetic activity";
+  }
+
+  if (level === "yellow") {
+    return "YELLOW alert: geomagnetic activity elevated";
+  }
+
+  if (level === "quiet") {
+    return "Geomagnetic conditions quiet";
+  }
+
+  return "Rolling status unavailable";
+}
+
+function formatAlertSummary(level, isStale, latestActivity) {
+  if (isStale) {
+    return "The latest magnetometer samples are older than the rolling freshness threshold.";
+  }
+
+  var activityValue = Number(latestActivity);
+
+  if (!Number.isFinite(activityValue)) {
+    return "No recent activity value is available yet.";
+  }
+
+  if (level === "red") {
+    return "Latest activity is " + activityValue.toFixed(1) + " nT, above the red threshold.";
+  }
+
+  if (level === "amber") {
+    return "Latest activity is " + activityValue.toFixed(1) + " nT, above the amber threshold.";
+  }
+
+  if (level === "yellow") {
+    return "Latest activity is " + activityValue.toFixed(1) + " nT, above the yellow threshold.";
+  }
+
+  return "Latest activity is " + activityValue.toFixed(1) + " nT, below the yellow threshold.";
+}
+
+function formatActivityMetaValue(latestActivity) {
+  var activityValue = Number(latestActivity);
+  if (!Number.isFinite(activityValue)) {
+    return "unknown";
+  }
+
+  return activityValue.toFixed(1) + " nT";
+}
+
+function updateAlertBanner(status, statusSourcePath) {
+  var banner = document.getElementById("alertBanner");
+  var title = document.getElementById("alertTitle");
+  var summary = document.getElementById("alertSummary");
+  var meta = document.getElementById("alertMeta");
+  var level = status.alert_level || "unknown";
+  var bannerClass = status.is_stale ? "stale" : level;
+  var sourcePath = statusSourcePath || "unknown";
+
+  banner.className = "status-banner " + bannerClass;
+  title.textContent = formatAlertTitle(level, status.is_stale);
+  summary.textContent = formatAlertSummary(level, status.is_stale, status.latest_activity_nt);
+  meta.textContent = "Last sample: " + (status.latest_sample_time_utc || "unknown")
+    + " | Latest processed minute: " + (status.latest_processed_minute_utc || "unknown")
+    + " | Activity: " + formatActivityMetaValue(status.latest_activity_nt)
+    + " | Status source: " + sourcePath;
+}
+
+function setAlertUnavailable(message) {
+  updateAlertBanner({alert_level: "unknown", is_stale: false, latest_activity_nt: null, latest_sample_time_utc: "unknown", latest_processed_minute_utc: "unknown"}, "unavailable");
+  document.getElementById("alertSummary").textContent = message;
+  document.getElementById("alertMeta").textContent = "Status JSON: unavailable";
+}
+
+function refreshRollingStatus() {
+  var statusCandidates = [
+    "./status/current.json",
+    "./temp/status/current.json"
+  ];
+
+  function fetchNextStatus(index) {
+    if (index >= statusCandidates.length) {
+      setAlertUnavailable("Waiting for the latest rolling status file.");
+      return;
+    }
+
+    var statusUrl = statusCandidates[index] + "?t=" + Date.now();
+
+    fetch(statusUrl, { cache: "no-store" })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error("status fetch failed");
+        }
+        return response.json();
+      })
+      .then(function(status) {
+        updateAlertBanner(status, statusCandidates[index]);
+      })
+      .catch(function() {
+        fetchNextStatus(index + 1);
+      });
+  }
+
+  fetchNextStatus(0);
+}
+
+function setGroupVisibility(sectionId, isVisible, navMainId, navMobileId) {
+  var section = document.getElementById(sectionId);
+  var navMain = document.getElementById(navMainId);
+  var navMobile = document.getElementById(navMobileId);
+  var displayValue = isVisible ? "block" : "none";
+
+  section.style.display = displayValue;
+  navMain.style.display = displayValue;
+  navMobile.style.display = displayValue;
+}
+
+function showDefaultImage(image) {
+  var fallback = "./images/default.png";
+  var currentSource = (image.getAttribute("src") || "").split("?")[0];
+
+  if (currentSource !== fallback) {
+    image.src = fallback;
+  }
+}
+
+function refreshPlotImages() {
+  var images = document.querySelectorAll("img");
+  var timestamp = Date.now();
+
+  for (var i = 0; i < images.length; i++) {
+    var image = images[i];
+    var refreshSrc = image.getAttribute("data-refresh-src");
+
+    if (!refreshSrc) {
+      var currentSrc = image.getAttribute("src") || "";
+      if (currentSrc.indexOf("./temp/") !== 0) {
+        continue;
+      }
+
+      refreshSrc = currentSrc.split("?")[0];
+      image.setAttribute("data-refresh-src", refreshSrc);
+    }
+
+    image.src = refreshSrc + "?t=" + timestamp;
+  }
+}
+
+function refreshOptionalGraphs() {
+  var optionCandidates = [
+    "./status/plot-options.json",
+    "./temp/status/plot-options.json"
+  ];
+
+  function fetchOptions(index) {
+    if (index >= optionCandidates.length) {
+      return Promise.reject(new Error("plot options fetch failed"));
+    }
+
+    return fetch(optionCandidates[index] + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error("plot options fetch failed");
+        }
+        return response.json();
+      })
+      .catch(function() {
+        return fetchOptions(index + 1);
+      });
+  }
+
+  fetchOptions(0)
+    .then(function(options) {
+      var showHdz = options.plot_hdz === true;
+      var showBi = options.plot_bi === true;
+
+      document.getElementById("cardRollingHDZ").style.display = showHdz ? "block" : "none";
+      document.getElementById("cardHDZ").style.display = showHdz ? "block" : "none";
+      document.getElementById("cardRollingBI").style.display = showBi ? "block" : "none";
+      document.getElementById("cardBI").style.display = showBi ? "block" : "none";
+      setGroupVisibility("HDZ", showHdz, "navHdz", "navDemoHdz");
+      setGroupVisibility("BI", showBi, "navBi", "navDemoBi");
+      setGroupVisibility("noaa", options.plot_noaa === true, "navNoaa", "navDemoNoaa");
+      setGroupVisibility("kp", options.plot_kp === true, "navKp", "navDemoKp");
+    })
+    .catch(function() {
+      setGroupVisibility("HDZ", false, "navHdz", "navDemoHdz");
+      setGroupVisibility("BI", false, "navBi", "navDemoBi");
+      setGroupVisibility("noaa", false, "navNoaa", "navDemoNoaa");
+      setGroupVisibility("kp", false, "navKp", "navDemoKp");
+    });
+}
+
+function periodLabel(periodName) {
+  var labels = {
+    week: "WEEK",
+    month: "MONTH",
+    "3month": "3 MONTH",
+    "6month": "6 MONTH",
+    year: "YEAR"
+  };
+
+  return labels[periodName] || periodName;
+}
+
+function refreshPeriodPlots() {
+  var statusCandidates = [
+    "./status/period-plots.json",
+    "./temp/status/period-plots.json"
+  ];
+
+  function fetchNextStatus(index) {
+    if (index >= statusCandidates.length) {
+      throw new Error("period plot status fetch failed");
+    }
+
+    return fetch(statusCandidates[index] + "?t=" + Date.now(), { cache: "no-store" })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error("period plot status fetch failed");
+        }
+        return response.json();
+      })
+      .catch(function() {
+        return fetchNextStatus(index + 1);
+      });
+  }
+
+  fetchNextStatus(0)
+    .then(function(status) {
+      var sectionVisible = false;
+      var cards = document.getElementById("periodPlotCards");
+      cards.innerHTML = "";
+
+      // status JSON keys are alphabetically sorted, so impose display order here
+      ["week", "month", "3month", "6month", "year"].forEach(function(periodName) {
+        var period = status.periods[periodName];
+        if (!period || !period.enabled) {
+          return;
+        }
+
+        sectionVisible = true;
+        ["XYZ", "HDZ", "BI"].forEach(function(familyName) {
+          var familyEnabled = status.families[familyName.toLowerCase()] === true;
+          if (!familyEnabled) {
+            return;
+          }
+
+          var title = document.createElement("h3");
+          title.className = "period-plot-title";
+          title.textContent = periodLabel(periodName) + " " + familyName;
+          cards.appendChild(title);
+
+          if (period.available) {
+            var frame = document.createElement("div");
+            frame.className = "w3-row w3-padding-16";
+            var image = document.createElement("img");
+            image.className = "w3-round w3-margin-bottom";
+            image.alt = periodName + " " + familyName + " magnetic plot";
+            image.style.width = "100%";
+            image.src = "./temp/periods/" + periodName + "/" + familyName + ".png?t=" + Date.now();
+            image.onerror = function() { showDefaultImage(this); };
+            frame.appendChild(image);
+            cards.appendChild(frame);
+          } else {
+            var placeholder = document.createElement("div");
+            placeholder.className = "period-placeholder";
+            var neededDays = period.minimum_days || period.required_days;
+            placeholder.textContent = "Not enough data yet: " + period.valid_days + " of "
+              + neededDays + " required complete UTC days in the " + period.required_days
+              + "-day window (" + period.start_date + " to " + period.end_date + ").";
+            cards.appendChild(placeholder);
+          }
+        });
+      });
+
+      setGroupVisibility("periods", sectionVisible, "navPeriods", "navDemoPeriods");
+    })
+    .catch(function() {
+      setGroupVisibility("periods", false, "navPeriods", "navDemoPeriods");
+    });
+}
+
+function refreshPageData() {
+  refreshRollingStatus();
+  refreshOptionalGraphs();
+  refreshPeriodPlots();
+  refreshPlotImages();
+}
+
+refreshPageData();
+setInterval(refreshPageData, 300000);
+</script>
+<!-- End of Scripts -->
+
+</body>
+<!-- End of Body -->
+
+</html>
