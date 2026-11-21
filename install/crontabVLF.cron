@@ -14,8 +14,11 @@
 # events (run consecutively so logfile entries stay sequential) every 5 minutes
 */5 * * * * /bin/bash /home/pi/UKRAA-VLF/scripts/getDataNOAA.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
-# cron entry to fetch sunrise/sunset times for the day ahead - daily at 00:05 UTC
-05 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataSun.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+# cron entry to fetch sunrise/sunset times for the day - hourly at :03 UTC
+# (exits immediately if the day's file already exists, so this normally runs
+# the API fetch once just after midnight; the later runs are free retries
+# after a network outage)
+03 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataSun.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
 # ------------------------------------------------------------------------------------------
 # Housekeeping

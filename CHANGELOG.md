@@ -22,6 +22,11 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Changed
 
+- `GetDataSun.py`: now runs hourly from cron and exits immediately if the
+  day's sun file already exists, so a network outage at midnight (which
+  previously lost the whole day's sunrise/sunset annotations) is retried
+  every hour. New `--date YYYY-MM-DD` option to backfill a missed day and
+  `--force` to re-fetch an already stored day.
 - `aerials.ini.example` / `vlf_common.load_aerials()`: new `mode` key for the
   MCP3424 conversion mode (0 = one-shot, 1 = continuous); example now uses
   addresses 0x6E/0x6F, 12-bit resolution, 24 samples with trim 8.

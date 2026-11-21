@@ -6,9 +6,9 @@
 #
 # ==========================================================================================
 #
-# Program to get today's sunrise and sunset times (UTC) from the
+# Program to get the sunrise and sunset times (UTC) for a given day from the
 # sunrise-sunset.org API:
-#   https://api.sunrise-sunset.org/json?lat=<lat>&lng=<lng>&date=today&formatted=0
+#   https://api.sunrise-sunset.org/json?lat=<lat>&lng=<lng>&date=<date>&formatted=0
 #
 # NOTE: attribution to https://sunrise-sunset.org is required by the API
 # terms of use.
@@ -16,12 +16,19 @@
 # The station latitude/longitude (and name) are read from the [location]
 # section of config/user.ini - see install/user.ini.example.
 #
-# Intended to be run from cron once a day shortly after 00:00 UTC. Both
-# times are stored in a SINGLE daily file:
+# Intended to be run from cron once an hour. If the day's file already
+# exists the program exits immediately without logging or contacting the
+# API, so the data is normally fetched by the first run after 00:00 UTC
+# and the remaining runs are free retries after a network outage.
+# Both times are stored in a SINGLE daily file:
 #   <data>/Sun/YYYY/YYYY-MM/YYYY-MM-DD.csv
 # containing one record:
 #   yyyy-mm-dd hh:mm:ss,sunrise,yyyy-mm-dd hh:mm:ss,sunset
-# The file is rewritten on each run, so re-running is always safe.
+#
+# Usage:
+#   GetDataSun.py                     today's times (skipped if already stored)
+#   GetDataSun.py --date 2026-11-20   backfill a specific (past) day
+#   GetDataSun.py --force             re-fetch and rewrite even if stored
 #
 # All timestamps (data, log entries) are UTC.
 #
@@ -34,6 +41,7 @@
 #
 # ==========================================================================================
 
+import argparse
 import os
 import sys
 from datetime import datetime, timezone
@@ -44,7 +52,7 @@ from vlf_common import (USER_FILE, fetch_json, load_paths, load_user,
 SOURCE = 'GetDataSun.py'
 
 API_URL = ('https://api.sunrise-sunset.org/json'
-           '?lat={latitude}&lng={longitude}&date=today&formatted=0')
+           '?lat={latitude}&lng={longitude}&date={date}&formatted=0')
 
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -64,13 +72,44 @@ def parse_api_time(text):
     return when.astimezone(timezone.utc)
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description='Fetch sunrise/sunset times from sunrise-sunset.org')
+    parser.add_argument(
+        '--date', metavar='YYYY-MM-DD',
+        help='day to fetch (default: today, UTC) - use to backfill a '
+             'missed day')
+    parser.add_argument(
+        '--force', action='store_true',
+        help='re-fetch and rewrite the file even if the day is already '
+             'stored')
+    return parser.parse_args()
+
+
 def main():
+    arguments = parse_arguments()
+    if arguments.date:
+        try:
+            day = datetime.strptime(arguments.date, '%Y-%m-%d').date()
+        except ValueError:
+            print(f'Bad --date value (expected YYYY-MM-DD): '
+                  f'{arguments.date}', file=sys.stderr)
+            return 1
+    else:
+        day = utc_now().date()
+
     paths = load_paths()
     logfiles_path = paths['logfiles']
     data_path = paths['data']
 
+    # Already stored? Nothing to do (hourly cron runs are retries, so exit
+    # quietly without flooding the log)
+    path = day_file_path(data_path, day)
+    if os.path.isfile(path) and not arguments.force:
+        return 0
+
     log_message(logfiles_path, SOURCE,
-                'Started sunrise/sunset data collection')
+                f'Started sunrise/sunset data collection for {day:%Y-%m-%d}')
 
     user = load_user()
     if user['latitude'] is None or user['longitude'] is None:
@@ -83,7 +122,8 @@ def main():
         return 1
 
     url = API_URL.format(latitude=user['latitude'],
-                         longitude=user['longitude'])
+                         longitude=user['longitude'],
+                         date=f'{day:%Y-%m-%d}')
 
     # Fetch from the API, with safeguards if the service is down
     try:
@@ -108,7 +148,6 @@ def main():
         return 1
 
     # Write both times to a single daily file (rewritten - re-run safe)
-    path = day_file_path(data_path, utc_now().date())
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as data_file:
         data_file.write(f'{sunrise:{TIME_FORMAT}},sunrise,'
