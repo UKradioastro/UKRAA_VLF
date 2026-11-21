@@ -42,6 +42,13 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   needed), publishes `WWW/` to `/var/www/html` and points the `temp`
   path in `config/vlf.ini` at `/var/www/html/temp/` so the plot scripts
   write straight into the served folder.
+- Data credits: `PlotRolling.gp` / `PlotYesterday.gp` now print
+  "Data: NOAA SWPC | sunrise-sunset.org" in the bottom-right corner of
+  every plot (each part only when that data is shown), and
+  `WWW/index.html` links to NOAA SWPC and sunrise-sunset.org below the
+  graphs - sunrise-sunset.org attribution is required by that API's
+  terms of use; the NOAA credit is a courtesy (US Government data is
+  public domain).
 
 ### Changed
 

@@ -117,6 +117,19 @@ if (cmd eq "") {
     exit
 }
 
+# Data credits - NOAA SWPC courtesy credit; sunrise-sunset.org attribution
+# is required by that API's terms of use
+Credits = ""
+if (HaveXray) {
+    Credits = "Data: NOAA SWPC"
+}
+if (exists("SunriseTime") || exists("SunsetTime")) {
+    Credits = Credits . (Credits eq "" ? "Data: " : " | ") . "sunrise-sunset.org"
+}
+if (Credits ne "") {
+    set label 99 Credits at screen 0.99, screen 0.012 right font "sans,7" textcolor rgb "#606060" front
+}
+
 eval("plot " . cmd)
 
 # Second, date-stamped copy for the archive
