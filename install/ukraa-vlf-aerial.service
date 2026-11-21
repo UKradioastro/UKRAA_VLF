@@ -1,0 +1,33 @@
+# UKRAA VLF aerial capture service
+#
+# Runs scripts/GetDataAerial.py as a long-running service: one measurement
+# cycle every 10 seconds (:00, :10, :20 ... of each minute) on every ADC Pi
+# channel configured in config/aerials.ini.
+#
+# Paths and the user assume the installation lives in /home/pi/UKRAA-VLF
+# and runs as the "pi" account - adjust User= and ExecStart= if different.
+#
+# Install with:
+#   sudo cp ukraa-vlf-aerial.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ukraa-vlf-aerial.service
+#
+# Check with:
+#   systemctl status ukraa-vlf-aerial.service
+
+[Unit]
+Description=UKRAA VLF aerial ADC Pi data capture
+# Wait for the clock to be synchronised - all data timestamps are UTC
+After=time-sync.target
+Wants=time-sync.target
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataAerial.py
+WorkingDirectory=/home/pi/UKRAA-VLF/scripts
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

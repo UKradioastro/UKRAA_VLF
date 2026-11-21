@@ -21,8 +21,9 @@
 # Housekeeping
 # ------------------------------------------------------------------------------------------
 
-# cron entry to restart the VLF aerial capture service if data has stalled - every 10 minutes
-#*/10 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/RestartGetAerialData.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+# NOTE: VLF aerial capture (GetDataAerial.py) is NOT run from cron - it runs
+# as a systemd service that restarts automatically on failure.
+# See install/ukraa-vlf-aerial.service.
 
 # cron entry to manage (rotate/trim) logfiles - Sunday 00:30 each week
 30 00 * * 00 /bin/bash /home/pi/UKRAA-VLF/scripts/manageLogfiles.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1

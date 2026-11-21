@@ -5,6 +5,7 @@
 ;   address_1  : I2C address of the first chip (channels 1-4)
 ;   address_2  : I2C address of the second chip (channels 5-8)
 ;   resolution : ADC bit resolution - 12, 14, 16 or 18
+;   mode       : Operational mode, 0 = one-shot, 1 = continuous
 ;   gain       : PGA gain - 1, 2, 4 or 8
 ;   samples    : number of readings taken per sample (e.g. 15)
 ;   trim       : readings removed from the top AND the bottom of the sorted
@@ -21,12 +22,13 @@
 ; A channel is plotted/recorded only if BOTH callsign and frequency_hz are set.
 
 [MCP3424]
-address_1 = 0x68
-address_2 = 0x69
-resolution = 18
+address_1 = 0x6E
+address_2 = 0x6F
+resolution = 12
+mode = 1
 gain = 1
-samples = 15
-trim = 5
+samples = 24
+trim = 8
 
 [channel_1]
 callsign = DHO38
@@ -34,7 +36,7 @@ frequency_hz = 23400
 off_air = 07:00-08:00
 
 [channel_2]
-callsign =
+callsign = 
 frequency_hz =
 
 [channel_3]

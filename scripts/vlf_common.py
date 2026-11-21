@@ -129,6 +129,7 @@ def load_aerials():
         'address_1': parser.get('MCP3424', 'address_1', fallback='0x68'),
         'address_2': parser.get('MCP3424', 'address_2', fallback='0x69'),
         'resolution': get_int('MCP3424', 'resolution', 18),
+        'mode': get_int('MCP3424', 'mode', 1),
         'gain': get_int('MCP3424', 'gain', 1),
         'samples': get_int('MCP3424', 'samples', 15),
         'trim': get_int('MCP3424', 'trim', 5),
