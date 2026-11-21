@@ -24,6 +24,9 @@
 #   VLFplot<frequency_hz>.png / VLFplot<frequency_hz>-YYYYMMDD.png
 #   NOAAxraysYesterday.png    / NOAAxraysYesterday-YYYYMMDD.png
 #
+# A plots.json manifest describing the available plots is also refreshed
+# in the temp folder for the intranet web page (WWW/index.html).
+#
 # All times are UTC. Activity is logged to logfiles/logfile.log; failures
 # are logged to logfiles/logerror.log.
 #
@@ -39,7 +42,8 @@ import sys
 from datetime import timedelta
 
 from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
-                        log_message, off_air_window, read_sun_times, utc_now)
+                        log_message, off_air_window, read_sun_times, utc_now,
+                        write_plot_manifest)
 
 SOURCE = 'PlotDataYesterday.py'
 
@@ -169,6 +173,12 @@ def main():
             created += 1
             log_message(logfiles_path, SOURCE,
                         f'Created {output_path} and {archive_path}')
+
+    try:
+        write_plot_manifest(www_path, stations)
+    except OSError as error:
+        log_error(logfiles_path, SOURCE,
+                  f'Failed to write plots.json manifest: {error}')
 
     log_message(logfiles_path, SOURCE,
                 f"Completed yesterday's plots - {created} plot(s) created")

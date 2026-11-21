@@ -14,6 +14,7 @@
 #         logfiles/logfile.log   : normal activity
 #         logfiles/logerror.log  : errors / failures
 #   - fetching JSON from a web service with retries
+#   - writing the plots.json manifest consumed by the intranet web page
 #
 # The configuration file location can be overridden with the VLF_CONFIG
 # environment variable (useful for testing). user.ini is expected in the
@@ -22,6 +23,7 @@
 # ==========================================================================================
 
 import configparser
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -156,6 +158,42 @@ def load_aerials():
             'off_air': parser.get(section, 'off_air', fallback='').strip(),
         })
     return {'adc': adc, 'stations': stations}
+
+
+def write_plot_manifest(temp_path, stations):
+    """Write <temp>/plots.json describing the plot files for the web page.
+
+    The intranet page (WWW/index.html) fetches this manifest to discover
+    which station plots exist and when they were last refreshed. Written
+    atomically so the browser never reads a half-written file.
+
+    Each station entry gives the rolling and yesterday PNG filenames
+    (relative to the temp folder); the fallback entry names the X-ray
+    only plots used while no stations are configured.
+    """
+    manifest = {
+        'generated_utc': f'{utc_now():{TIME_FORMAT}}',
+        'stations': [
+            {
+                'callsign': station['callsign'],
+                'frequency_hz': station['frequency_hz'],
+                'rolling': f'VLFrolling{station["frequency_hz"]}.png',
+                'yesterday': f'VLFplot{station["frequency_hz"]}.png',
+            }
+            for station in stations
+        ],
+        'fallback': {
+            'rolling': 'NOAAxraysRolling.png',
+            'yesterday': 'NOAAxraysYesterday.png',
+        },
+    }
+    os.makedirs(temp_path, exist_ok=True)
+    manifest_path = os.path.join(temp_path, 'plots.json')
+    temp_file = manifest_path + '.tmp'
+    with open(temp_file, 'w') as output:
+        json.dump(manifest, output, indent=2)
+        output.write('\n')
+    os.replace(temp_file, manifest_path)
 
 
 def read_sun_times(data_path, day):

@@ -26,6 +26,22 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   with a 60s watchdog (hung capture loop is killed and restarted) and a
   stalled-ADC self-restart - if every channel fails for 30 consecutive
   cycles (5 minutes) the service exits so systemd re-initialises the ADC.
+- `WWW/index.html`: intranet page now displays the rolling 24-hour and
+  yesterday plots. It reads a `plots.json` manifest from the temp folder
+  (written by the plot scripts) to build one plot card per configured
+  station - falling back to the NOAA X-ray only plots while no stations
+  are configured - and shows a freshness banner that turns stale when the
+  manifest is more than 15 minutes old. Magnetometer carry-over content
+  (nT alert banner, HDZ/BI/period plots) removed.
+- `vlf_common.write_plot_manifest()`: writes `<temp>/plots.json`
+  (atomically) describing the stations and plot filenames; called from
+  `PlotDataRolling.py` (every 5 minutes, keeps the freshness timestamp
+  current) and `PlotDataYesterday.py`.
+- `install/install_webserver.sh`: web server install section for the
+  future `install.sh` - installs apache2 only (no PHP or database is
+  needed), publishes `WWW/` to `/var/www/html` and points the `temp`
+  path in `config/vlf.ini` at `/var/www/html/temp/` so the plot scripts
+  write straight into the served folder.
 
 ### Changed
 
