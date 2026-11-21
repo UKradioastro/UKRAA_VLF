@@ -28,6 +28,10 @@
 # as a systemd service that restarts automatically on failure.
 # See install/ukraa-vlf-aerial.service.
 
+# cron entry to check aerial data is still arriving and not all-nan
+# (alert-only to logerror.log; recovery is handled by systemd) - every 10 minutes
+7-59/10 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/CheckDataAerial.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
 # cron entry to manage (rotate/trim) logfiles - Sunday 00:30 each week
 30 00 * * 00 /bin/bash /home/pi/UKRAA-VLF/scripts/manageLogfiles.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 

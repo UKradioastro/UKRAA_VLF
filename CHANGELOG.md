@@ -19,6 +19,13 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   `logfile.log`.
 - `install/ukraa-vlf-aerial.service`: systemd unit running the aerial
   capture as an auto-restarting service.
+- `scripts/CheckDataAerial.py` + cron entry: independent 10-minute check
+  that aerial data is still arriving and not all-nan; alerts to
+  `logerror.log` only (recovery is handled by systemd).
+- `GetDataAerial.py` / `ukraa-vlf-aerial.service`: systemd `Type=notify`
+  with a 60s watchdog (hung capture loop is killed and restarted) and a
+  stalled-ADC self-restart - if every channel fails for 30 consecutive
+  cycles (5 minutes) the service exits so systemd re-initialises the ADC.
 
 ### Changed
 

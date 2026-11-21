@@ -22,12 +22,16 @@ After=time-sync.target
 Wants=time-sync.target
 
 [Service]
-Type=simple
+Type=notify
 User=pi
 ExecStart=/usr/bin/python3 /home/pi/UKRAA-VLF/scripts/GetDataAerial.py
 WorkingDirectory=/home/pi/UKRAA-VLF/scripts
-Restart=on-failure
+# Restart if the process exits for any reason (crash, stalled-ADC self-exit)
+Restart=always
 RestartSec=10
+# The script pings WATCHDOG=1 every 10s cycle; if pings stop for 60s
+# (e.g. a read blocked on a wedged I2C bus) systemd kills and restarts it
+WatchdogSec=60
 
 [Install]
 WantedBy=multi-user.target

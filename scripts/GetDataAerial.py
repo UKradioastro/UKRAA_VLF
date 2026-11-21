@@ -16,7 +16,12 @@
 # sorted set before averaging (trim).
 #
 # Intended to be run as a systemd service (see
-# install/ukraa-vlf-aerial.service). Each measurement cycle:
+# install/ukraa-vlf-aerial.service). The service uses Type=notify with a
+# 60s watchdog: the script pings systemd every cycle, so a hung loop (e.g.
+# a read blocked on a wedged I2C bus) is killed and restarted by systemd.
+# If every channel fails for STALL_RESTART_CYCLES consecutive cycles the
+# script exits so systemd restarts it, re-initialising the ADC hardware.
+# Each measurement cycle:
 #
 #   1. Waits for the next 10-second boundary (:00, :10, :20 ... of each
 #      minute), giving 6 measurement cycles per minute.
@@ -55,6 +60,7 @@
 
 import os
 import signal
+import socket
 import sys
 import time
 
@@ -64,6 +70,37 @@ SOURCE = 'GetDataAerial.py'
 
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 CYCLE_SECONDS = 10          # measurement cycle every 10 seconds (:00, :10, ...)
+
+# If EVERY channel fails for this many consecutive cycles the ADC is assumed
+# stalled: the service exits so systemd restarts it, re-initialising the
+# I2C bus and ADC from scratch (30 cycles = 5 minutes)
+STALL_RESTART_CYCLES = 30
+
+
+# ==========================================================================================
+#
+# systemd integration
+#
+# ==========================================================================================
+
+def sd_notify(message):
+    """Send a state notification to the systemd notify socket.
+
+    Used for Type=notify readiness (READY=1) and the WatchdogSec keep-alive
+    (WATCHDOG=1). A silent no-op when not running under systemd (e.g. run
+    by hand for testing).
+    """
+    socket_path = os.environ.get('NOTIFY_SOCKET')
+    if not socket_path:
+        return
+    if socket_path.startswith('@'):     # abstract socket namespace
+        socket_path = '\0' + socket_path[1:]
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
+            sock.connect(socket_path)
+            sock.sendall(message.encode())
+    except (OSError, AttributeError):
+        pass
 
 
 # ==========================================================================================
@@ -151,7 +188,10 @@ def sleep_to_next_cycle():
 def run_capture(adc, stations, adc_settings, data_path, logfiles_path):
     """Measurement loop: one cycle every CYCLE_SECONDS, hourly summaries.
 
-    Runs until the process receives SIGTERM/SIGINT (systemd stop).
+    Pings the systemd watchdog every cycle. Returns 1 if every channel has
+    failed for STALL_RESTART_CYCLES consecutive cycles (stalled ADC - exit
+    so systemd restarts the service and re-initialises the hardware).
+    Otherwise runs until the process receives SIGTERM/SIGINT (systemd stop).
     """
     samples = adc_settings['samples']
     trim = adc_settings['trim']
@@ -159,10 +199,13 @@ def run_capture(adc, stations, adc_settings, data_path, logfiles_path):
     summary_hour = utc_now().hour
     cycles = 0
     failures = {station['callsign']: 0 for station in stations}
+    stalled_cycles = 0
 
     while True:
         sleep_to_next_cycle()
+        sd_notify('WATCHDOG=1')
 
+        failed_this_cycle = 0
         for station in stations:
             when = utc_now()
             try:
@@ -171,11 +214,27 @@ def run_capture(adc, stations, adc_settings, data_path, logfiles_path):
             except (IOError, OSError, ValueError) as error:
                 value = float('nan')
                 failures[station['callsign']] += 1
+                failed_this_cycle += 1
                 log_error(logfiles_path, SOURCE,
                           f'ADC read failed on channel {station["channel"]} '
                           f'({station["callsign"]}): {error}')
             append_record(data_path, station['callsign'], when, value)
         cycles += 1
+
+        # Stalled ADC? (every channel failing) - exit so systemd restarts
+        # the service and the ADC/I2C bus is re-initialised from scratch
+        stalled_cycles = (stalled_cycles + 1
+                          if failed_this_cycle == len(stations) else 0)
+        if stalled_cycles >= STALL_RESTART_CYCLES:
+            log_error(logfiles_path, SOURCE,
+                      f'ADC stalled - all channels failed for '
+                      f'{STALL_RESTART_CYCLES} consecutive cycles '
+                      f'({STALL_RESTART_CYCLES * CYCLE_SECONDS // 60} '
+                      f'minutes) - exiting for systemd to restart')
+            log_message(logfiles_path, SOURCE,
+                        'Abandoned VLF aerial data capture - '
+                        'ADC stalled (see logerror.log)')
+            return 1
 
         # Hourly summary to logfile.log
         hour = utc_now().hour
@@ -239,6 +298,8 @@ def main():
                 f'mode, {adc_settings["samples"]} samples trimmed by '
                 f'{adc_settings["trim"]}: {station_list}')
 
+    sd_notify('READY=1')     # Type=notify: tell systemd start-up succeeded
+
     # Let systemd stop the service cleanly (SIGTERM) or Ctrl-C when run by
     # hand (SIGINT) - both raise KeyboardInterrupt handled below
     def request_stop(signum, frame):
@@ -247,7 +308,8 @@ def main():
     signal.signal(signal.SIGTERM, request_stop)
 
     try:
-        run_capture(adc, stations, adc_settings, data_path, logfiles_path)
+        return run_capture(adc, stations, adc_settings, data_path,
+                           logfiles_path)
     except KeyboardInterrupt:
         log_message(logfiles_path, SOURCE, 'Stopped VLF aerial data capture')
         return 0
