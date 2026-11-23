@@ -9,6 +9,20 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Added
 
+- `scripts/UploadDataWWW.py` + `install/remote-upload.ini.example` + cron
+  entries: remote FTP upload of the plot images and the `plots.json`
+  manifest to an external web site, configured in
+  `config/remote-upload.ini`. The remote layout mirrors the local temp
+  folder (`<directory>/temp/...`), so the same `WWW/index.html` works
+  unchanged on the remote site (upload `index.html` and `WWW/images`
+  there once, manually). Two modes run from cron shortly after the
+  matching plot jobs: `rolling` (`--days 1/3/7` - every 5 minutes for
+  the 24-hour plots, hourly for the 3/7-day plots) and `periods`
+  (midnight-aligned plots, daily); `plots.json` is uploaded last so it
+  never references an image that is not there yet. Plain FTP or explicit
+  FTPS (`tls = true`) - for hosts without SFTP. While `enabled = false`
+  (or the config file is absent) the script exits quietly, so the cron
+  entries can stay in place.
 - `scripts/PlotDataPeriod.py` + cron entries: static (midnight-aligned)
   3-day and 7-day plots covering complete UTC days, produced daily after
   the yesterday plots when the matching `3day`/`7day` section is enabled

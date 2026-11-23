@@ -1,0 +1,43 @@
+; UKRAA VLF remote FTP upload configuration
+; Copy to /home/pi/UKRAA-VLF/config/remote-upload.ini and adjust as required.
+;
+; Used by scripts/UploadDataWWW.py (run from cron) to upload the plot
+; images and the plots.json manifest to an external web site by FTP.
+; While enabled = false (or this file is absent) the upload script does
+; nothing, so the cron entries can stay in place.
+;
+; The remote layout mirrors the local temp folder, so the same
+; WWW/index.html works unchanged on the remote site - upload index.html
+; and the WWW/images folder into <directory> once, manually:
+;   <directory>/temp/plots.json
+;   <directory>/temp/rolling/day|3day|7day/<frequency_hz>.png
+;   <directory>/temp/periods/yesterday|3day|7day/<frequency_hz>.png
+;
+; [ftp]
+;   enabled         : master switch for the remote uploads. Leave false
+;                     until the settings below are filled in.
+;   site            : FTP host name (no ftp:// prefix)
+;   user / password : FTP login credentials
+;   port            : FTP control port (normally 21)
+;   directory       : base folder on the remote site that index.html is
+;                     served from, e.g. /public_html or /htdocs/vlf
+;   timeout_seconds : connection/transfer timeout
+;   passive         : passive mode transfers (true suits most hosts and
+;                     firewalls/routers)
+;   create_dirs     : create missing remote folders on first upload
+;   tls             : use explicit FTPS (FTP over TLS) - many hosts
+;                     without SFTP still support FTPS, which encrypts the
+;                     password and the transfers; set true if your host
+;                     allows it
+
+[ftp]
+enabled = false
+site = ftp.example.com
+user = your-ftp-user
+password = your-ftp-password
+port = 21
+directory = /public_html
+timeout_seconds = 30
+passive = true
+create_dirs = true
+tls = false

@@ -71,5 +71,20 @@
 # Publishing
 # ------------------------------------------------------------------------------------------
 
-# cron entry to upload plots and web assets to WWW - daily at 00:45 UTC
-#45 00 * * * /bin/bash /home/pi/UKRAA-VLF/scripts/uploadWWW.sh >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+# cron entries to upload the plots and plots.json manifest to an external
+# web site by FTP, configured in config/remote-upload.ini (the entries do
+# nothing until enabled there - see install/remote-upload.ini.example).
+# Upload index.html and WWW/images to the remote site once, manually.
+
+# rolling 24-hour plots - every 5 minutes, offset 2 minutes after the
+# rolling plot refresh
+4-59/5 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/UploadDataWWW.py rolling >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# rolling 3-day and 7-day plots (when enabled in config/plots.ini) -
+# hourly, 2 minutes after each plot refresh
+18 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/UploadDataWWW.py rolling --days 3 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+48 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/UploadDataWWW.py rolling --days 7 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# midnight-aligned yesterday/3-day/7-day plots - daily at 00:45 UTC,
+# after the yesterday and period plot jobs
+45 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/UploadDataWWW.py periods >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
