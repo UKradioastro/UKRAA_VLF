@@ -71,7 +71,8 @@ WINDOWS = {
     1: {'section': 'rolling', 'station_name': 'VLFrolling{hz}.png',
         'fallback_name': 'NOAAxraysRolling.png', 'label': '24 hours',
         'subtitle': 'Rolling 24 hours to {now:%H:%M} UTC '
-                    '- updated every 5 minutes'},
+                    '- updated every 5 minutes',
+        'extra_assigns': ['CanvasWidth=960', 'CanvasHeight=540']},
     3: {'section': '3day', 'station_name': 'VLF3day{hz}.png',
         'fallback_name': 'NOAAxrays3day.png', 'label': '3 days',
         'subtitle': 'Rolling 3 days to {now:%H:%M} UTC {now:%d %b} '

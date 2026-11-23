@@ -76,6 +76,13 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Changed
 
+- All plots are now 960x540 (previously the rolling and yesterday plots
+  were 640x540), so every graph on the web page is the same width; the
+  page's graph frames widened to match.
+- `WWW/images`: `UKRAA_VLF.png` (25.7 MB) and `header.png` (2.4 MB)
+  replaced with web-sized JPEGs `UKRAA_VLF.jpg` (0.5 MB) and
+  `header.jpg` (0.35 MB) - the originals were photographs served at full
+  camera resolution on every page load.
 - `GetDataSun.py`: now runs hourly from cron and exits immediately if the
   day's sun file already exists, so a network outage at midnight (which
   previously lost the whole day's sunrise/sunset annotations) is retried

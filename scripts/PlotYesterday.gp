@@ -19,7 +19,7 @@
 
 reset
 
-set terminal pngcairo enhanced font "DejaVuSansCondensed,10" rounded size 640,540
+set terminal pngcairo enhanced font "DejaVuSansCondensed,10" rounded size 960,540
 set output OutputFile
 
 set datafile separator ","
