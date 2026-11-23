@@ -49,6 +49,17 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   graphs - sunrise-sunset.org attribution is required by that API's
   terms of use; the NOAA credit is a courtesy (US Government data is
   public domain).
+- `scripts/EvaluateAlerts.py` + `install/alerts.ini.example` + cron entry:
+  email alerts, configured in `config/alerts.ini`. An alert email is sent
+  when a GOES X-ray flare reaches the configured `flare_threshold`
+  (e.g. C1.0 / M1.0 / X1.0), with a follow-up if NOAA later upgrades the
+  flare to a higher class letter; state in `data/alerts/alert-state.json`
+  ensures one email per flare per class letter and retries failed sends.
+  A daily heartbeat email (at/after a configured UTC hour, default 09:00)
+  summarises the last 24 hours of flares and whether the rolling plots
+  are fresh. The current rolling plot(s) (one per configured station) can
+  optionally be attached to either email. `--test-email` and
+  `--test-heartbeat` options verify the SMTP settings.
 
 ### Changed
 

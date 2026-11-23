@@ -1,0 +1,56 @@
+; UKRAA VLF email alerts configuration
+; Copy to /home/pi/UKRAA-VLF/config/alerts.ini and adjust as required.
+;
+; [alerts]
+;   email_enabled   : master switch for all alert and heartbeat emails.
+;                     Leave false until the [smtp] and [email] settings
+;                     below are filled in.
+;   flare_threshold : minimum GOES X-ray flare class that triggers an
+;                     alert email - letter + number, e.g. C1.0, C5.0,
+;                     M1.0, X1.0. The letter sets the decade
+;                     (A=1e-8, B=1e-7, C=1e-6, M=1e-5, X=1e-4 W/m2)
+;                     and the number multiplies it, so M2.5 = 2.5e-5.
+;                     A follow-up email is sent if NOAA later upgrades a
+;                     flare to a higher class letter (e.g. M -> X).
+;
+; [smtp] - the outgoing mail server
+;
+; [email]
+;   from / to   : sender and comma-separated recipient list
+;   attach_plot : attach the current rolling plot (one per configured
+;                 station) to alert emails
+;
+; [web]
+;   url : link to the intranet page, included in emails (blank = omitted)
+;
+; [heartbeat] - daily health-check email
+;   enabled     : send one summary email per day
+;   hour_utc    : send at/after this UTC hour (0-23)
+;   to          : blank = use the [email] to list
+;   attach_plot : attach the rolling plot(s) to heartbeat emails
+
+[alerts]
+email_enabled = false
+flare_threshold = C1.0
+
+[smtp]
+host = smtp.example.com
+port = 587
+username = your-smtp-username
+password = your-smtp-password
+starttls = true
+ssl = false
+
+[email]
+from = vlf@example.com
+to = you@example.com
+attach_plot = false
+
+[web]
+url = http://raspberrypi.local
+
+[heartbeat]
+enabled = false
+hour_utc = 9
+to =
+attach_plot = false
