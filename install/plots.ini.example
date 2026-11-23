@@ -1,0 +1,44 @@
+; UKRAA VLF plot configuration
+; Copy to /home/pi/UKRAA-VLF/config/plots.ini and adjust as required.
+;
+; One section per plot type. If this file (or a key) is missing the
+; defaults shown below are used, which match the original behaviour:
+; rolling and yesterday plots with all overlays, no 3/7-day plots.
+;
+; Keys (all true/false):
+;   enabled : produce this plot at all
+;   sun     : sunrise/sunset shading and marks (one night band per day -
+;             busy on the multi-day plots, which default to false)
+;   xray    : NOAA GOES X-ray flux overlay (red, right-hand axis)
+;   flares  : solar flare begin/end markers with class labels (a week of
+;             C-class markers swamps the 7-day plot, so it defaults off)
+;
+; Notes:
+;   - The 3-day and 7-day plots refresh hourly (see crontabVLF.cron) and
+;     appear automatically on the web page when enabled.
+;   - The transmitter off-air annotation is only drawn on the rolling
+;     and yesterday plots.
+
+[rolling]
+enabled = true
+sun = true
+xray = true
+flares = true
+
+[yesterday]
+enabled = true
+sun = true
+xray = true
+flares = true
+
+[3day]
+enabled = false
+sun = false
+xray = true
+flares = true
+
+[7day]
+enabled = false
+sun = false
+xray = true
+flares = false

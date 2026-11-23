@@ -24,6 +24,8 @@ body {font-family: "Lato", sans-serif}
 .status-meta {font-size: 0.95rem; margin: 8px 0 0}
 .graph-frame {margin-left: auto; margin-right: auto; max-width: 800px; width: 100%}
 .graph-frame img {display: block; margin-left: auto; margin-right: auto; max-width: 800px}
+.graph-frame-wide {max-width: 980px}
+.graph-frame-wide img {max-width: 960px}
 .plot-title {margin: 32px 0 8px}
 .plot-placeholder {border: 1px solid #777; margin: 16px auto; max-width: 800px; padding: 24px; text-align: center}
 </style>
@@ -46,6 +48,7 @@ body {font-family: "Lato", sans-serif}
       <div class="w3-dropdown-content w3-bar-block w3-card-4">
         <a href="#rolling" class="w3-bar-item w3-button">ROLLING STATUS</a>
         <a href="#daily_Act" class="w3-bar-item w3-button">YESTERDAY'S GRAPHS</a>
+        <a href="#periods" class="w3-bar-item w3-button" id="navPeriods" style="display:none">LONG PERIOD GRAPHS</a>
       </div>
     </div>
     <a href="#contact" class="w3-bar-item w3-button w3-padding-large w3-hide-small">CONTACT</a>
@@ -58,6 +61,7 @@ body {font-family: "Lato", sans-serif}
   <a href="#detector" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">SID DETECTOR</a>
   <a href="#rolling" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">ROLLING STATUS</a>
   <a href="#daily_Act" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">YESTERDAY'S GRAPHS</a>
+  <a href="#periods" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()" id="navDemoPeriods" style="display:none">LONG PERIOD GRAPHS</a>
 </div>
 <!-- End of Navbar -->
 
@@ -133,6 +137,15 @@ body {font-family: "Lato", sans-serif}
       <p class="w3-center">No accuracy is claimed for any published data</p>
       <div id="yesterdayPlots"></div>
       <p class="w3-small w3-center">X-ray flux and solar flare data courtesy of <a href="https://www.swpc.noaa.gov/" target="_blank">NOAA SWPC</a>. Sunrise/sunset times from <a href="https://sunrise-sunset.org" target="_blank">sunrise-sunset.org</a>.</p>
+    </div>
+  </div>
+
+  <!-- Optional 3-day / 7-day plots (enabled in config/plots.ini) -->
+  <div class="w3-grey" id="periods" style="display:none">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:1100px">
+      <h2 class="w3-wide">LONG PERIOD VLF RESULTS</h2>
+      <p class="w3-center">Rolling multi-day plots, refreshed hourly</p>
+      <div id="periodPlots"></div>
     </div>
   </div>
 
@@ -228,14 +241,14 @@ function stationLabel(station) {
   return label;
 }
 
-function buildPlotCard(container, titleText, fileName, altText, timestamp) {
+function buildPlotCard(container, titleText, fileName, altText, timestamp, wide) {
   var title = document.createElement("h3");
   title.className = "plot-title";
   title.textContent = titleText;
   container.appendChild(title);
 
   var frame = document.createElement("div");
-  frame.className = "w3-auto graph-frame";
+  frame.className = wide ? "w3-auto graph-frame graph-frame-wide" : "w3-auto graph-frame";
   var image = document.createElement("img");
   image.className = "w3-margin-bottom";
   image.alt = altText;
@@ -244,6 +257,48 @@ function buildPlotCard(container, titleText, fileName, altText, timestamp) {
   image.onerror = function() { showDefaultImage(this); };
   frame.appendChild(image);
   container.appendChild(frame);
+}
+
+function setPeriodsVisibility(isVisible) {
+  var displayValue = isVisible ? "block" : "none";
+  document.getElementById("periods").style.display = displayValue;
+  document.getElementById("navPeriods").style.display = displayValue;
+  document.getElementById("navDemoPeriods").style.display = displayValue;
+}
+
+var PERIOD_LABELS = {"3day": "3 DAY", "7day": "7 DAY"};
+
+function renderPeriodPlots(manifest, stations, fallback, timestamp) {
+  var container = document.getElementById("periodPlots");
+  container.innerHTML = "";
+  var periods = manifest.periods || {};
+  var anyVisible = false;
+
+  ["3day", "7day"].forEach(function(periodName) {
+    if (periods[periodName] !== true) {
+      return;
+    }
+    anyVisible = true;
+    var label = PERIOD_LABELS[periodName];
+
+    if (stations.length === 0) {
+      if (fallback[periodName]) {
+        buildPlotCard(container, label + " \u2014 NOAA GOES X-ray flux (no aerials configured)",
+                      fallback[periodName], periodName + " X-ray plot", timestamp, true);
+      }
+      return;
+    }
+    stations.forEach(function(station) {
+      if (station[periodName]) {
+        buildPlotCard(container, label + " \u2014 " + stationLabel(station),
+                      station[periodName],
+                      periodName + " plot for " + stationLabel(station),
+                      timestamp, true);
+      }
+    });
+  });
+
+  setPeriodsVisibility(anyVisible);
 }
 
 function renderPlots(manifest) {
@@ -255,6 +310,8 @@ function renderPlots(manifest) {
 
   var stations = Array.isArray(manifest.stations) ? manifest.stations : [];
   var fallback = manifest.fallback || {};
+
+  renderPeriodPlots(manifest, stations, fallback, timestamp);
 
   if (stations.length === 0) {
     if (fallback.rolling) {
@@ -282,6 +339,7 @@ function renderPlots(manifest) {
 }
 
 function showPlotPlaceholders(message) {
+  setPeriodsVisibility(false);
   ["rollingPlots", "yesterdayPlots"].forEach(function(id) {
     var container = document.getElementById(id);
     container.innerHTML = "";

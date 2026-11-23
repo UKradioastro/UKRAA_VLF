@@ -60,6 +60,19 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   are fresh. The current rolling plot(s) (one per configured station) can
   optionally be attached to either email. `--test-email` and
   `--test-heartbeat` options verify the SMTP settings.
+- Optional rolling 3-day and 7-day plots (NOAA GOES style, 960x540,
+  refreshed hourly from cron): `PlotDataRolling.py --days 3` / `--days 7`
+  write `VLF3day<hz>.png` / `VLF7day<hz>.png` and appear automatically in
+  a new "LONG PERIOD VLF RESULTS" section of the web page when enabled.
+- `install/plots.ini.example` / `vlf_common.load_plot_options()`: new
+  `config/plots.ini` controls which plots are produced (rolling,
+  yesterday, 3day, 7day) and which overlays appear on each (sun shading,
+  X-ray flux, flare markers), so busy multi-day plots can be decluttered.
+  Defaults preserve the original behaviour. The transmitter off-air
+  annotation is only drawn on the rolling and yesterday plots.
+- `PlotRolling.gp`: generalised - parametrised canvas size, x-tic
+  interval/format, up to 16 data files per trace and optional compact
+  night shading (no text labels) for the multi-day plots.
 
 ### Changed
 

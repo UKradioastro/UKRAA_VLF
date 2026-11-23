@@ -35,6 +35,7 @@ CONFIG_FILE = os.environ.get(
     'VLF_CONFIG', os.path.join(DEFAULT_HOME, 'config', 'vlf.ini'))
 USER_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'user.ini')
 AERIALS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'aerials.ini')
+PLOTS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'plots.ini')
 
 LOGFILE_NAME = 'logfile.log'
 LOGERROR_NAME = 'logerror.log'
@@ -160,6 +161,43 @@ def load_aerials():
     return {'adc': adc, 'stations': stations}
 
 
+# Per-plot-type display options (config/plots.ini); the defaults preserve
+# the original behaviour: rolling and yesterday plots with all overlays,
+# no 3/7-day plots.
+PLOT_OPTION_DEFAULTS = {
+    'rolling':   {'enabled': True,  'sun': True,  'xray': True,
+                  'flares': True},
+    'yesterday': {'enabled': True,  'sun': True,  'xray': True,
+                  'flares': True},
+    '3day':      {'enabled': False, 'sun': False, 'xray': True,
+                  'flares': True},
+    '7day':      {'enabled': False, 'sun': False, 'xray': True,
+                  'flares': False},
+}
+
+
+def load_plot_options():
+    """Return the per-plot-type options from plots.ini, with defaults.
+
+    Returns {plot_type: {'enabled', 'sun', 'xray', 'flares'}} for the
+    types rolling, yesterday, 3day and 7day. Missing files, sections,
+    keys or unparseable values fall back to PLOT_OPTION_DEFAULTS.
+    """
+    parser = configparser.ConfigParser()
+    parser.read(PLOTS_FILE)
+    options = {}
+    for section, defaults in PLOT_OPTION_DEFAULTS.items():
+        values = {}
+        for key, fallback in defaults.items():
+            try:
+                values[key] = parser.getboolean(section, key,
+                                                fallback=fallback)
+            except ValueError:
+                values[key] = fallback
+        options[section] = values
+    return options
+
+
 def write_plot_manifest(temp_path, stations):
     """Write <temp>/plots.json describing the plot files for the web page.
 
@@ -167,24 +205,34 @@ def write_plot_manifest(temp_path, stations):
     which station plots exist and when they were last refreshed. Written
     atomically so the browser never reads a half-written file.
 
-    Each station entry gives the rolling and yesterday PNG filenames
-    (relative to the temp folder); the fallback entry names the X-ray
-    only plots used while no stations are configured.
+    Each station entry gives the rolling, yesterday, 3day and 7day PNG
+    filenames (relative to the temp folder); the fallback entry names the
+    X-ray only plots used while no stations are configured. The periods
+    entry tells the page which multi-day plots are enabled in plots.ini.
     """
+    options = load_plot_options()
     manifest = {
         'generated_utc': f'{utc_now():{TIME_FORMAT}}',
+        'periods': {
+            '3day': options['3day']['enabled'],
+            '7day': options['7day']['enabled'],
+        },
         'stations': [
             {
                 'callsign': station['callsign'],
                 'frequency_hz': station['frequency_hz'],
                 'rolling': f'VLFrolling{station["frequency_hz"]}.png',
                 'yesterday': f'VLFplot{station["frequency_hz"]}.png',
+                '3day': f'VLF3day{station["frequency_hz"]}.png',
+                '7day': f'VLF7day{station["frequency_hz"]}.png',
             }
             for station in stations
         ],
         'fallback': {
             'rolling': 'NOAAxraysRolling.png',
             'yesterday': 'NOAAxraysYesterday.png',
+            '3day': 'NOAAxrays3day.png',
+            '7day': 'NOAAxrays7day.png',
         },
     }
     os.makedirs(temp_path, exist_ok=True)

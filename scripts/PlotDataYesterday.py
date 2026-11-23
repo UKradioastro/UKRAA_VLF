@@ -41,8 +41,9 @@ import subprocess
 import sys
 from datetime import timedelta
 
-from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
-                        log_message, off_air_window, read_sun_times, utc_now,
+from vlf_common import (TIME_FORMAT, load_aerials, load_paths,
+                        load_plot_options, log_error, log_message,
+                        off_air_window, read_sun_times, utc_now,
                         write_plot_manifest)
 
 SOURCE = 'PlotDataYesterday.py'
@@ -87,6 +88,13 @@ def main():
     logfiles_path = paths['logfiles']
     data_path = paths['data']
 
+    # Overlay options for the yesterday plots (config/plots.ini)
+    options = load_plot_options()['yesterday']
+    if not options['enabled']:
+        log_message(logfiles_path, SOURCE,
+                    "Yesterday's plots disabled in plots.ini - nothing to do")
+        return 0
+
     log_message(logfiles_path, SOURCE, "Started yesterday's plots")
 
     yesterday = utc_now().date() - timedelta(days=1)
@@ -100,7 +108,9 @@ def main():
 
     xray_path = day_file(data_path, 'NOAA_xray', day=yesterday)
     flare_path = day_file(data_path, 'NOAA_xray_flares', day=yesterday)
-    sunrise, sunset = read_sun_times(data_path, yesterday)
+    sunrise = sunset = None
+    if options['sun']:
+        sunrise, sunset = read_sun_times(data_path, yesterday)
 
     stations = load_aerials()['stations']
     if not stations:
@@ -126,8 +136,9 @@ def main():
         if station:
             khz = station['frequency_hz'] / 1000
             base_name = f'VLFplot{station["frequency_hz"]}'
-            title = (f'{station["callsign"]} VLF ({khz:g} kHz) and '
-                     f'NOAA GOES primary X-ray data')
+            title = f'{station["callsign"]} VLF ({khz:g} kHz)'
+            if options['xray']:
+                title += ' and NOAA GOES primary X-ray data'
             aerial_path = day_file(data_path, 'Aerial', station['callsign'],
                                    day=yesterday)
             if os.path.isfile(aerial_path):
@@ -151,10 +162,10 @@ def main():
             base_name = 'NOAAxraysYesterday'
             title = 'NOAA GOES primary X-ray data'
 
-        if os.path.isfile(xray_path):
+        if options['xray'] and os.path.isfile(xray_path):
             have_data = True
             assigns.append(f"XrayFile='{gp_path(xray_path)}'")
-        if os.path.isfile(flare_path):
+        if options['flares'] and os.path.isfile(flare_path):
             assigns.append(f"FlareFile='{gp_path(flare_path)}'")
 
         if not have_data:

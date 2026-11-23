@@ -6,12 +6,18 @@
 #
 # ==========================================================================================
 #
-# Program to create the rolling 24-hour plots (VLF receiver output with NOAA
+# Program to create the rolling plots (VLF receiver output with NOAA
 # GOES primary X-ray flux overlay) using the generic gnuplot template
 # PlotRolling.gp.
 #
-# Intended to be run from cron every 5 minutes, offset 2 minutes after the
-# data fetches (2-59/5).
+# By default a rolling 24-hour plot is produced; --days 3 or --days 7
+# produce the rolling 3-day / 7-day plots (NOAA GOES style), when enabled
+# in config/plots.ini. plots.ini also controls which overlays (sun
+# shading, X-ray flux, flare markers) appear on each plot type.
+#
+# Intended to be run from cron: the 24-hour plot every 5 minutes, offset
+# 2 minutes after the data fetches (2-59/5); the 3-day and 7-day plots
+# hourly.
 #
 # One plot is created per station configured in config/aerials.ini
 # (a channel counts as configured when both callsign and frequency_hz are
@@ -24,8 +30,10 @@
 # with records: yyyy-mm-dd hh:mm:ss,voltage
 #
 # Plots are written to the temp folder (<home>/temp/ by default):
-#   VLFrolling<frequency_hz>.png  (one per station)
-#   NOAAxraysRolling.png          (when no stations are configured)
+#   VLFrolling<frequency_hz>.png  (one per station; --days 3/7 write
+#   VLF3day<frequency_hz>.png / VLF7day<frequency_hz>.png)
+#   NOAAxraysRolling.png          (when no stations are configured;
+#   NOAAxrays3day.png / NOAAxrays7day.png for --days 3/7)
 #
 # A plots.json manifest describing the available plots is also refreshed
 # in the temp folder for the intranet web page (WWW/index.html).
@@ -39,13 +47,15 @@
 #
 # ==========================================================================================
 
+import argparse
 import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 
-from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
-                        log_message, off_air_window, read_sun_times, utc_now,
+from vlf_common import (TIME_FORMAT, load_aerials, load_paths,
+                        load_plot_options, log_error, log_message,
+                        off_air_window, read_sun_times, utc_now,
                         write_plot_manifest)
 
 SOURCE = 'PlotDataRolling.py'
@@ -55,6 +65,28 @@ TEMPLATE = os.path.join(SCRIPT_DIR, 'PlotRolling.gp')
 # gnuplot executable - override with VLF_GNUPLOT for testing
 GNUPLOT = os.environ.get('VLF_GNUPLOT', 'gnuplot')
 GNUPLOT_TIMEOUT = 120  # seconds
+
+# Per-window presentation: output names, canvas size, x-axis tics/format
+WINDOWS = {
+    1: {'section': 'rolling', 'station_name': 'VLFrolling{hz}.png',
+        'fallback_name': 'NOAAxraysRolling.png', 'label': '24 hours',
+        'subtitle': 'Rolling 24 hours to {now:%H:%M} UTC '
+                    '- updated every 5 minutes'},
+    3: {'section': '3day', 'station_name': 'VLF3day{hz}.png',
+        'fallback_name': 'NOAAxrays3day.png', 'label': '3 days',
+        'subtitle': 'Rolling 3 days to {now:%H:%M} UTC {now:%d %b} '
+                    '- updated hourly',
+        'extra_assigns': ['CanvasWidth=960', 'CanvasHeight=540',
+                          'TicSeconds=43200', 'XTicFormat="%d %b\\n%H:%M"',
+                          'CompactNights=1']},
+    7: {'section': '7day', 'station_name': 'VLF7day{hz}.png',
+        'fallback_name': 'NOAAxrays7day.png', 'label': '7 days',
+        'subtitle': 'Rolling 7 days to {now:%H:%M} UTC {now:%d %b} '
+                    '- updated hourly',
+        'extra_assigns': ['CanvasWidth=960', 'CanvasHeight=540',
+                          'TicSeconds=86400', "XTicFormat='%d %b'",
+                          'CompactNights=1']},
+}
 
 
 def gp_path(path):
@@ -142,30 +174,56 @@ def run_gnuplot(assigns, logfiles_path, output_name):
     return True
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Create the rolling VLF + X-ray plots.')
+    parser.add_argument('--days', type=int, choices=sorted(WINDOWS),
+                        default=1,
+                        help='rolling window length in days (default 1; '
+                             '3 and 7 must be enabled in plots.ini)')
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    window = WINDOWS[args.days]
+
     paths = load_paths()
     logfiles_path = paths['logfiles']
     data_path = paths['data']
 
-    log_message(logfiles_path, SOURCE, 'Started rolling 24-hour plots')
+    options = load_plot_options()[window['section']]
+    if not options['enabled']:
+        log_message(logfiles_path, SOURCE,
+                    f'Rolling {window["label"]} plots disabled in '
+                    f'plots.ini - nothing to do')
+        return 0
+
+    log_message(logfiles_path, SOURCE,
+                f'Started rolling {window["label"]} plots')
 
     now = utc_now()
-    start = now - timedelta(hours=24)
-    days = [start.date()]
-    if now.date() != start.date():
-        days.append(now.date())
+    start = now - timedelta(days=args.days)
+    days = [start.date() + timedelta(days=offset)
+            for offset in range((now.date() - start.date()).days + 1)]
 
     www_path = paths['temp']
     os.makedirs(www_path, exist_ok=True)
 
-    xray_files = [path for path in (xray_file(data_path, day)
-                                    for day in days) if os.path.isfile(path)]
-    flare_files = [path for path in (flare_file(data_path, day)
-                                     for day in days) if os.path.isfile(path)]
+    xray_files = []
+    if options['xray']:
+        xray_files = [path for path in (xray_file(data_path, day)
+                                        for day in days)
+                      if os.path.isfile(path)]
+    flare_files = []
+    if options['flares']:
+        flare_files = [path for path in (flare_file(data_path, day)
+                                         for day in days)
+                       if os.path.isfile(path)]
 
-    # Night shading and sunrise/sunset marks, clipped to the 24-hour window
-    common_assigns = []
-    sun = sun_events(data_path, days)
+    # Night shading and sunrise/sunset marks, clipped to the window
+    common_assigns = list(window.get('extra_assigns', []))
+    sun = sun_events(data_path, days) if options['sun'] else {}
     if sun:
         nights = night_intervals(start, now, list(sun.values()))
         if nights:
@@ -199,19 +257,21 @@ def main():
 
     created = 0
     for station in stations or [None]:
+        subtitle = window['subtitle'].format(now=now)
         assigns = [
             f"StartTime='{start:{TIME_FORMAT}}'",
             f"EndTime='{now:{TIME_FORMAT}}'",
-            f"GraphSubtitle='Rolling 24 hours to {now:%H:%M} UTC "
-            f"- updated every 5 minutes'",
+            f"GraphSubtitle='{subtitle}'",
         ] + common_assigns
         have_data = False
 
         if station:
             khz = station['frequency_hz'] / 1000
-            output_name = f'VLFrolling{station["frequency_hz"]}.png'
-            title = (f'{station["callsign"]} VLF ({khz:g} kHz) and '
-                     f'NOAA GOES primary X-ray data')
+            output_name = window['station_name'].format(
+                hz=station['frequency_hz'])
+            title = f'{station["callsign"]} VLF ({khz:g} kHz)'
+            if options['xray']:
+                title += ' and NOAA GOES primary X-ray data'
             found = [path for path in
                      (aerial_file(data_path, station['callsign'], day)
                       for day in days) if os.path.isfile(path)]
@@ -221,23 +281,27 @@ def main():
                 have_data = True
                 assigns.append(f"AerialTitle='{station['callsign']} "
                                f"VLF ({khz:g} kHz)'")
-                # Off-air annotation only when monitoring this station with data
-                if station['off_air']:
+                # Off-air annotation only on the 24-hour plot, and only
+                # when monitoring this station with data
+                if station['off_air'] and args.days == 1:
                     windows = []
                     for day in days:
-                        window = off_air_window(station['off_air'], day)
-                        if window is None:
+                        window_times = off_air_window(station['off_air'], day)
+                        if window_times is None:
                             continue
-                        window_start = parse_time(window[0])
-                        window_end = parse_time(window[1])
+                        window_start = parse_time(window_times[0])
+                        window_end = parse_time(window_times[1])
                         if window_end > start and window_start < now:
-                            windows.append(window)
+                            windows.append(window_times)
                     if windows:
                         assigns.append(f'OffAirCount={len(windows)}')
-                        for index, window in enumerate(windows, 1):
-                            assigns.append(f"OffAir{index}Start='{window[0]}'")
-                            assigns.append(f"OffAir{index}End='{window[1]}'")
-                            assigns.append(f"OffAir{index}Mid='{window[2]}'")
+                        for index, window_times in enumerate(windows, 1):
+                            assigns.append(
+                                f"OffAir{index}Start='{window_times[0]}'")
+                            assigns.append(
+                                f"OffAir{index}End='{window_times[1]}'")
+                            assigns.append(
+                                f"OffAir{index}Mid='{window_times[2]}'")
                         assigns.append(f"OffAirLabel='{station['callsign']} "
                                        f"off-air {station['off_air']} UTC'")
             else:
@@ -245,7 +309,7 @@ def main():
                             f'No aerial data for {station["callsign"]} yet '
                             f'- plotting X-ray data only')
         else:
-            output_name = 'NOAAxraysRolling.png'
+            output_name = window['fallback_name']
             title = 'NOAA GOES primary X-ray data'
 
         for index, path in enumerate(xray_files, 1):
@@ -273,7 +337,8 @@ def main():
                   f'Failed to write plots.json manifest: {error}')
 
     log_message(logfiles_path, SOURCE,
-                f'Completed rolling 24-hour plots - {created} plot(s) created')
+                f'Completed rolling {window["label"]} plots - '
+                f'{created} plot(s) created')
     return 0 if created else 1
 
 

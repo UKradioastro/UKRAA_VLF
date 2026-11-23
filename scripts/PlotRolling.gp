@@ -3,16 +3,21 @@
 #
 # Driven by PlotDataRolling.py, which passes variables with gnuplot -e:
 #   required : OutputFile, GraphTitle, GraphSubtitle, StartTime, EndTime
-#   optional : AerialFile1, AerialFile2  (yesterday's and today's data)
-#              AerialTitle               (legend text for the aerial trace)
-#              XrayFile1, XrayFile2      (yesterday's and today's data)
-#              FlareFile1, FlareFile2    (yesterday's and today's flare events)
+#   optional : AerialFile1..N           (one per day in the window)
+#              AerialTitle              (legend text for the aerial trace)
+#              XrayFile1..N             (one per day in the window)
+#              FlareFile1..N            (one per day in the window)
 #              NightCount + Night<i>Start/Night<i>End
-#                                        (night shading, clipped to window)
+#                                       (night shading, clipped to window)
 #              SunMarkCount + SunMark<i>Time/SunMark<i>Label
-#                                        (sunrise/sunset lines in window)
+#                                       (sunrise/sunset lines in window)
 #              OffAirCount + OffAir<i>Start/OffAir<i>End/OffAir<i>Mid,
-#              OffAirLabel               (transmitter off-air windows)
+#              OffAirLabel              (transmitter off-air windows)
+#              CanvasWidth/CanvasHeight (default 640x540)
+#              TicSeconds               (x tic interval, default 7200)
+#              XTicFormat               (x tic label format, default %H:%M)
+#              CompactNights            (set to skip the night text labels
+#                                       on busy multi-day plots)
 # Optional variables are simply not defined when the data is unavailable;
 # the plot adapts (e.g. X-ray only while no aerial data exists yet).
 #
@@ -23,27 +28,35 @@
 
 reset
 
-set terminal pngcairo enhanced font "DejaVuSansCondensed,10" rounded size 640,540
+MAXFILES = 16
+
+set terminal pngcairo enhanced font "DejaVuSansCondensed,10" rounded size (exists("CanvasWidth") ? CanvasWidth : 640), (exists("CanvasHeight") ? CanvasHeight : 540)
 set output OutputFile
 
 set datafile separator ","
 set xdata time
 set timefmt "%Y-%m-%d %H:%M:%S"
-set format x "%H:%M" timedate
+XTicFmt = exists("XTicFormat") ? XTicFormat : "%H:%M"
+set format x XTicFmt timedate
 
 set grid xtics ytics
 
 set xlabel "Time (UTC)"
 set xrange [StartTime:EndTime]
-set xtics border out scale 1,0.5 nomirror 7200
+TicSec = exists("TicSeconds") ? TicSeconds : 7200
+set xtics border out scale 1,0.5 nomirror TicSec
 set mxtics 2
 
 set key outside above right
 set key Right samplen 4 nobox
 set key title GraphTitle."\n".GraphSubtitle."\n"
 
-HaveAerial = exists("AerialFile1") + exists("AerialFile2")
-HaveXray = exists("XrayFile1") + exists("XrayFile2")
+HaveAerial = 0
+HaveXray = 0
+do for [i=1:MAXFILES] {
+    if (exists(sprintf("AerialFile%d", i))) { HaveAerial = 1 }
+    if (exists(sprintf("XrayFile%d", i))) { HaveXray = 1 }
+}
 
 FMT = "%Y-%m-%d %H:%M:%S"
 
@@ -56,7 +69,7 @@ if (exists("NightCount")) {
         ns = value(sprintf("Night%dStart", i))
         ne = value(sprintf("Night%dEnd", i))
         set object 10+i rectangle from first ns, graph 0 to first ne, graph 1 behind fillcolor rgb "#BEBEBE" fillstyle solid 1.0 noborder
-        if (strptime(FMT, ne) - strptime(FMT, ns) >= 10800) {
+        if (!exists("CompactNights") && strptime(FMT, ne) - strptime(FMT, ns) >= 10800) {
             nm = strftime(FMT, (strptime(FMT, ns) + strptime(FMT, ne)) / 2)
             set label 10+i "No solar flares\ndetectable" at first nm, graph 0.90 center font "sans,7" front boxed
         }
@@ -107,31 +120,28 @@ if (HaveXray) {
 cmd = ""
 sep = ""
 AerialKey = 1
-if (exists("AerialFile1")) {
-    cmd = cmd . sep . sprintf("'%s' using 1:2 with lines lc rgb '#A020F0' lw 1 title '%s'", AerialFile1, AerialTitle)
-    sep = ", "
-    AerialKey = 0
-}
-if (exists("AerialFile2")) {
-    cmd = cmd . sep . sprintf("'%s' using 1:2 with lines lc rgb '#A020F0' lw 1 title '%s'", AerialFile2, AerialKey ? AerialTitle : "")
-    sep = ", "
+do for [i=1:MAXFILES] {
+    if (exists(sprintf("AerialFile%d", i))) {
+        af = value(sprintf("AerialFile%d", i))
+        cmd = cmd . sep . sprintf("'%s' using 1:2 with lines lc rgb '#A020F0' lw 1 title '%s'", af, AerialKey ? AerialTitle : "")
+        sep = ", "
+        AerialKey = 0
+    }
 }
 XrayTitle = "NOAA GOES X-ray (0.1-0.8nm)"
-XrayKey = 1
-if (exists("XrayFile1")) {
-    cmd = cmd . sep . sprintf("'%s' using 1:5 axes x1y2 with lines lc rgb '#FF0000' lw 1 title '%s'", XrayFile1, XrayTitle)
-    sep = ", "
-    XrayKey = 0
-}
-if (exists("XrayFile2")) {
-    cmd = cmd . sep . sprintf("'%s' using 1:5 axes x1y2 with lines lc rgb '#FF0000' lw 1 title '%s'", XrayFile2, XrayKey ? XrayTitle : "")
-    sep = ", "
+do for [i=1:MAXFILES] {
+    if (exists(sprintf("XrayFile%d", i))) {
+        xf = value(sprintf("XrayFile%d", i))
+        cmd = cmd . sep . sprintf("'%s' using 1:5 axes x1y2 with lines lc rgb '#FF0000' lw 1 title '%s'", xf, XrayTitle)
+        sep = ", "
+        XrayTitle = ""
+    }
 }
 # Flare markers sit on the X-ray (y2) axis: dotted vertical bars at the
 # flare begin and end times with the maximum class labelled above
 FlareTitle = "Solar flare start/end with class"
 if (HaveXray) {
-    do for [i=1:2] {
+    do for [i=1:MAXFILES] {
         if (exists(sprintf("FlareFile%d", i))) {
             ff = value(sprintf("FlareFile%d", i))
             cmd = cmd . sep . sprintf("'%s' using 1:($6/5):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' title '%s'", ff, FlareTitle)

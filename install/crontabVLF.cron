@@ -43,6 +43,12 @@
 # offset 2 minutes after the data fetches
 2-59/5 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataRolling.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
+# cron entries to refresh the rolling 3-day and 7-day plots (only produced
+# when enabled in config/plots.ini) - hourly, at minutes clear of the
+# 5-minute jobs to spread the load
+16 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataRolling.py --days 3 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+46 * * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataRolling.py --days 7 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
 # cron entry to create yesterday's plots (VLF SID + X-ray) - daily at 00:20 UTC
 20 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataYesterday.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
