@@ -5,7 +5,8 @@
 # channel configured in config/aerials.ini.
 #
 # Paths and the user assume the installation lives in /home/pi/UKRAA-VLF
-# and runs as the "pi" account - adjust User= and ExecStart= if different.
+# and runs as the "pi" account - install/install.sh replaces User= and the
+# paths with the real account and installation path automatically.
 #
 # Install with:
 #   sudo cp ukraa-vlf-aerial.service /etc/systemd/system/

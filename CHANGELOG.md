@@ -9,6 +9,37 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Added
 
+- `install/install.sh`: unattended installer (no questions asked) modelled
+  on the magnetometer one. Run with
+  `sudo bash ~/UKRAA_VLF/install/install.sh`; installs all dependencies
+  (gnuplot, python3-requests, i2c-tools, python3-smbus2/smbus), enables
+  the I2C interface and sets the system timezone to UTC, creates the
+  directory structure and log files, sets up all `config/*.ini` files
+  from the examples (kept on re-run/upgrade), detects the MCP3424 ADC
+  chips on the I2C bus (0x68-0x6F) and writes their addresses into
+  `config/aerials.ini`, installs and starts the aerial capture service,
+  installs the cron entries into the owner's crontab and installs the
+  web server: apache2 only (no PHP or database is needed), publishing
+  `WWW/` to `/var/www/html` and pointing the `temp` path in
+  `config/vlf.ini` at `/var/www/html/temp/` so the plot scripts write
+  straight into the served folder. The installation account is the
+  account that
+  invoked `sudo` (override with `VLF_FILE_OWNER`) - the username does not
+  have to be `pi` - and all paths are taken from wherever the checkout
+  lives.
+- `scripts/ADCPi.py`: vendored copy of the ABElectronics ADC Pi library
+  (MIT licence,
+  https://github.com/abelectronicsuk/ABElectronics_Python_Libraries),
+  so only its `smbus2` (or legacy `smbus`) dependency needs installing -
+  no separate download of the AB Electronics repository is required.
+
+### Changed
+
+- `scripts/vlf_common.py`: the default base path is now the parent of the
+  `scripts/` folder (instead of the hard-coded `/home/pi/UKRAA-VLF/`), so
+  the software works unchanged from any installation directory and user
+  account; `VLF_CONFIG` still overrides the config file location.
+
 - `scripts/UploadDataWWW.py` + `install/remote-upload.ini.example` + cron
   entries: remote FTP upload of the plot images and the `plots.json`
   manifest to an external web site, configured in
@@ -71,8 +102,8 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   (atomically) describing the stations and plot filenames; called from
   `PlotDataRolling.py` (every 5 minutes, keeps the freshness timestamp
   current) and `PlotDataYesterday.py`.
-- `install/install_webserver.sh`: web server install section for the
-  future `install.sh` - installs apache2 only (no PHP or database is
+- Web server install section (now part of `install/install.sh`) -
+  installs apache2 only (no PHP or database is
   needed), publishes `WWW/` to `/var/www/html` and points the `temp`
   path in `config/vlf.ini` at `/var/www/html/temp/` so the plot scripts
   write straight into the served folder.

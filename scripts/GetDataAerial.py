@@ -48,9 +48,11 @@
 # failures (library missing, bad configuration, ADC read errors, etc.) are
 # logged to logfiles/logerror.log.
 #
-# Requires the ABElectronics ADCPi Python library:
-#   https://www.abelectronics.co.uk/kb/article/1/adc-pi-raspberry-pi-analogue-to-digital-converter
-# and I2C enabled on the Pi (sudo raspi-config -> Interface Options -> I2C).
+# Uses the ABElectronics ADCPi Python library (MIT licence), vendored as
+# scripts/ADCPi.py:
+#   https://github.com/abelectronicsuk/ABElectronics_Python_Libraries
+# Requires the smbus2 (or smbus) Python module (apt: python3-smbus2) and
+# I2C enabled on the Pi (sudo raspi-config -> Interface Options -> I2C).
 #
 # ==========================================================================================
 #
@@ -137,9 +139,9 @@ def open_adc(adc_settings, logfiles_path):
         from ADCPi import ADCPi
     except ImportError as error:
         log_error(logfiles_path, SOURCE,
-                  f'ABElectronics ADCPi library not installed ({error}) - '
-                  'see https://www.abelectronics.co.uk/kb/article/1/'
-                  'adc-pi-raspberry-pi-analogue-to-digital-converter')
+                  f'ADCPi library unavailable ({error}) - scripts/ADCPi.py '
+                  'needs the smbus2 (or smbus) module: '
+                  'sudo apt install python3-smbus2')
         return None
     try:
         address_1 = int(adc_settings['address_1'], 16)

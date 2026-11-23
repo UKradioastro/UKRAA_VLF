@@ -1,7 +1,7 @@
 ; UKRAA VLF configuration file
 ; Copy to /home/pi/UKRAA-VLF/config/vlf.ini and adjust as required.
 ;
-; NOTE: install_webserver.sh points temp at /var/www/html/temp/ so the
+; NOTE: install.sh points temp at /var/www/html/temp/ so the
 ; plot scripts write straight into the folder served by Apache. If you
 ; copy this example over an existing config, keep that temp setting -
 ; reverting it to the default below leaves the web page showing stale

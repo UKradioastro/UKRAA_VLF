@@ -30,7 +30,12 @@ from datetime import datetime, timezone
 
 import requests
 
-DEFAULT_HOME = '/home/pi/UKRAA-VLF/'
+# Default base path is the parent of the folder containing this file, so
+# the software works from any installation directory and user account
+# (the username does not have to be "pi"). Override the config location
+# with the VLF_CONFIG environment variable if required.
+DEFAULT_HOME = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
 CONFIG_FILE = os.environ.get(
     'VLF_CONFIG', os.path.join(DEFAULT_HOME, 'config', 'vlf.ini'))
 USER_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'user.ini')

@@ -3,8 +3,9 @@
 # NOTE: the Pi should have its timezone set to UTC so cron times match the
 # UTC timestamps used in all data and log files.
 #
-# Paths assume the installation lives in /home/pi/UKRAA-VLF - adjust if
-# installed elsewhere.
+# Paths assume the installation lives in /home/pi/UKRAA-VLF -
+# install/install.sh replaces them with the real installation path when it
+# installs these entries into the owner's crontab.
 
 # ------------------------------------------------------------------------------------------
 # Data collection
