@@ -128,6 +128,13 @@ done
 echo "UKRAA VLF directory structure created"
 echo ""
 
+echo "Provide RPi desktop wallpaper..."
+sudo -u "$FILE_OWNER" mkdir -p "$USER_HOME/Pictures"
+sudo -u "$FILE_OWNER" cp -v "$BASE_PATH/images/UKRAA_VLF_wallpaper.jpg" \
+	"$USER_HOME/Pictures/UKRAA_VLF_wallpaper.jpg"
+echo "RPi desktop wallpaper provided, ~/Pictures/UKRAA_VLF_wallpaper.jpg"
+echo ""
+
 echo "Creating UKRAA VLF log files..."
 for logFile in logfile.log logerror.log; do
 	sudo -u "$FILE_OWNER" touch "$BASE_PATH/logfiles/$logFile"

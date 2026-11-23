@@ -111,10 +111,15 @@ The installer:
 - installs all dependencies (gnuplot, python3-requests, i2c-tools and the smbus2 module used by the ADC Pi library)
 - enables the I2C interface and sets the system timezone to UTC (all data and log timestamps are UTC)
 - creates the directory structure, log files and all **config/*.ini** files from the supplied examples
+- copies the UKRAA VLF desktop wallpaper to **~/Pictures**, ready to select as your desktop background
 - detects the MCP3424 ADC chips on the I2C bus and writes their addresses into **config/aerials.ini**
 - installs and starts the aerial capture service (`ukraa-vlf-aerial.service`)
 - installs the cron entries into your crontab
 - installs the Apache web server and publishes the intranet web page
+
+When the installer finishes it prints a summary of what to set up next:
+
+![img_03a](images/VLF_install_04a.PNG)
 
 That's it!
 
@@ -145,7 +150,7 @@ sudo i2cdetect -y 1
 
 &nbsp;
 
-3. These are the I2C addresses of your ADC Pi, recorded as **address_1** and **address_2** in **~/UKRAA_VLF/config/aerials.ini**. The positions are set by the address jumpers on the board.
+3. These are the I2C addresses of your ADC Pi, recorded as **address_1** and **address_2** in **~/UKRAA_VLF/config/aerials.ini**. The positions are set by the address selection sockets on the board - see the **I2C Address Selection** section on the [AB Electronics ADC Pi page](https://www.abelectronics.co.uk/p/69/adc-pi).
 
 &nbsp;
 
@@ -192,6 +197,9 @@ After editing **aerials.ini**, restart the capture service to pick up the change
 ```
 sudo systemctl restart ukraa-vlf-aerial.service
 ```
+
+![img_04a](images/VLF_install_04a.PNG)
+
 
 [Back to Contents...](#contents)
 
