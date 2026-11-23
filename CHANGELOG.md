@@ -14,7 +14,8 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
   `sudo bash ~/UKRAA_VLF/install/install.sh`; installs all dependencies
   (gnuplot, python3-requests, i2c-tools, python3-smbus2/smbus), enables
   the I2C interface and sets the system timezone to UTC, creates the
-  directory structure and log files, sets up all `config/*.ini` files
+  directory structure and log files, copies the desktop wallpaper to
+  `~/Pictures`, sets up all `config/*.ini` files
   from the examples (kept on re-run/upgrade), detects the MCP3424 ADC
   chips on the I2C bus (0x68-0x6F) and writes their addresses into
   `config/aerials.ini`, installs and starts the aerial capture service,
