@@ -193,6 +193,9 @@ After editing **aerials.ini**, restart the capture service to pick up the change
 sudo systemctl restart ukraa-vlf-aerial.service
 ```
 
+![img_04a](images/VLF_install_04a.PNG)
+
+
 [Back to Contents...](#contents)
 
 &nbsp;
