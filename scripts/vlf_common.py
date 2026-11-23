@@ -56,7 +56,7 @@ def utc_now():
 def load_paths():
     """Return the [paths] settings from vlf.ini, with sensible defaults.
 
-    Keys returned: home, data, logfiles, scripts, temp.
+    Keys returned: home, data, logfiles, plots, scripts, temp.
     """
     parser = configparser.ConfigParser()
     parser.read(CONFIG_FILE)
@@ -67,6 +67,8 @@ def load_paths():
                            fallback=os.path.join(home, 'data')),
         'logfiles': parser.get('paths', 'logfiles',
                                fallback=os.path.join(home, 'logfiles')),
+        'plots': parser.get('paths', 'plots',
+                            fallback=os.path.join(home, 'plots')),
         'scripts': parser.get('paths', 'scripts',
                               fallback=os.path.join(home, 'scripts')),
         'temp': parser.get('paths', 'temp',
@@ -205,12 +207,28 @@ def write_plot_manifest(temp_path, stations):
     which station plots exist and when they were last refreshed. Written
     atomically so the browser never reads a half-written file.
 
-    Each station entry gives the rolling, yesterday, 3day and 7day PNG
-    filenames (relative to the temp folder); the fallback entry names the
-    X-ray only plots used while no stations are configured. The periods
-    entry tells the page which multi-day plots are enabled in plots.ini.
+    Filenames are relative to the temp folder, which is organised into
+    subfolders (the plot type is given by the folder, not the filename):
+        rolling/day|3day|7day/<frequency_hz>.png   (rolling plots)
+        periods/yesterday|3day|7day/<frequency_hz>.png
+                                                   (midnight-aligned plots)
+    The fallback entry names the X-ray only plots (NOAA.png in the same
+    folders) used while no stations are configured. The periods entry
+    tells the page which multi-day plots are enabled in plots.ini.
     """
     options = load_plot_options()
+
+    def entries(name):
+        # Forward slashes: these are URL/FTP paths relative to temp
+        return {
+            'rolling': f'rolling/day/{name}',
+            'yesterday': f'periods/yesterday/{name}',
+            '3day': f'rolling/3day/{name}',
+            '7day': f'rolling/7day/{name}',
+            'period3day': f'periods/3day/{name}',
+            'period7day': f'periods/7day/{name}',
+        }
+
     manifest = {
         'generated_utc': f'{utc_now():{TIME_FORMAT}}',
         'periods': {
@@ -221,19 +239,11 @@ def write_plot_manifest(temp_path, stations):
             {
                 'callsign': station['callsign'],
                 'frequency_hz': station['frequency_hz'],
-                'rolling': f'VLFrolling{station["frequency_hz"]}.png',
-                'yesterday': f'VLFplot{station["frequency_hz"]}.png',
-                '3day': f'VLF3day{station["frequency_hz"]}.png',
-                '7day': f'VLF7day{station["frequency_hz"]}.png',
+                **entries(f'{station["frequency_hz"]}.png'),
             }
             for station in stations
         ],
-        'fallback': {
-            'rolling': 'NOAAxraysRolling.png',
-            'yesterday': 'NOAAxraysYesterday.png',
-            '3day': 'NOAAxrays3day.png',
-            '7day': 'NOAAxrays7day.png',
-        },
+        'fallback': entries('NOAA.png'),
     }
     os.makedirs(temp_path, exist_ok=True)
     manifest_path = os.path.join(temp_path, 'plots.json')
@@ -242,6 +252,19 @@ def write_plot_manifest(temp_path, stations):
         json.dump(manifest, output, indent=2)
         output.write('\n')
     os.replace(temp_file, manifest_path)
+
+
+def plot_archive_path(plots_path, station_folder, plot_type, day, stem):
+    """Date-stamped archive path for a plot, creating the folders:
+        <plots>/<station_folder>/<plot_type>/YYYY/YYYY-MM/<stem>-YYYY-MM-DD.png
+
+    station_folder is the callsign (or 'NOAA' for the fallback plots);
+    plot_type is day, 3day or 7day; stem is the frequency in Hz (or 'NOAA').
+    """
+    folder = os.path.join(plots_path, station_folder, plot_type,
+                          f'{day:%Y}', f'{day:%Y-%m}')
+    os.makedirs(folder, exist_ok=True)
+    return os.path.join(folder, f'{stem}-{day:%Y-%m-%d}.png')
 
 
 def read_sun_times(data_path, day):

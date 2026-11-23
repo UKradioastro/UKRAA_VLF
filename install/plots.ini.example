@@ -14,8 +14,11 @@
 ;             C-class markers swamps the 7-day plot, so it defaults off)
 ;
 ; Notes:
-;   - The 3-day and 7-day plots refresh hourly (see crontabVLF.cron) and
-;     appear automatically on the web page when enabled.
+;   - The 3day and 7day sections each control two plots: the rolling
+;     3/7-day plot (refreshed hourly) and the static complete-days
+;     3/7-day plot (midnight to midnight, refreshed daily) - see
+;     crontabVLF.cron. Both appear automatically on the web page when
+;     enabled.
 ;   - The transmitter off-air annotation is only drawn on the rolling
 ;     and yesterday plots.
 

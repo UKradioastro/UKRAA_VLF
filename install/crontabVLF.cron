@@ -52,6 +52,12 @@
 # cron entry to create yesterday's plots (VLF SID + X-ray) - daily at 00:20 UTC
 20 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataYesterday.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
+# cron entries to create the static (midnight-aligned) 3-day and 7-day plots
+# (only produced when enabled in config/plots.ini) - daily after the
+# yesterday plots, at minutes clear of the 5-minute jobs
+24 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataPeriod.py --days 3 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+34 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataPeriod.py --days 7 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
 # ------------------------------------------------------------------------------------------
 # Alerting
 # ------------------------------------------------------------------------------------------

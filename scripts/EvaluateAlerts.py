@@ -262,14 +262,15 @@ def prune_state(state, now):
 
 def attachment_paths(temp_path, stations):
     """Rolling plot(s) to attach: one per configured station, or the
-    X-ray only plot while no stations are configured."""
+    X-ray only plot while no stations are configured (written to
+    <temp>/rolling/day/ by PlotDataRolling.py)."""
     if stations:
-        names = [f'VLFrolling{station["frequency_hz"]}.png'
-                 for station in stations]
+        names = [f'{station["frequency_hz"]}.png' for station in stations]
     else:
-        names = ['NOAAxraysRolling.png']
-    return [os.path.join(temp_path, name) for name in names
-            if os.path.isfile(os.path.join(temp_path, name))]
+        names = ['NOAA.png']
+    folder = os.path.join(temp_path, 'rolling', 'day')
+    return [os.path.join(folder, name) for name in names
+            if os.path.isfile(os.path.join(folder, name))]
 
 
 def send_email(settings, subject, body, attachments, to_override=''):

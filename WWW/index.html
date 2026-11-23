@@ -142,7 +142,7 @@ body {font-family: "Lato", sans-serif}
   <div class="w3-grey" id="periods" style="display:none">
     <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:1100px">
       <h2 class="w3-wide">LONG PERIOD VLF RESULTS</h2>
-      <p class="w3-center">Rolling multi-day plots, refreshed hourly</p>
+      <p class="w3-center">Rolling multi-day plots refreshed hourly; complete-days plots updated daily after midnight UTC</p>
       <div id="periodPlots"></div>
     </div>
   </div>
@@ -201,11 +201,13 @@ function myFunction() {
 // ------------------------------------------------------------------------
 // Plot display
 //
-// The plot scripts (PlotDataRolling.py / PlotDataYesterday.py) refresh
-// temp/plots.json describing the configured stations and their PNG
-// filenames. The page fetches that manifest, builds one plot card per
-// station in the rolling and yesterday sections (falling back to the
-// X-ray only plots while no stations are configured) and shows a
+// The plot scripts (PlotDataRolling.py / PlotDataPeriod.py /
+// PlotDataYesterday.py) refresh temp/plots.json describing the configured
+// stations and their PNG paths (relative to the temp folder, organised in
+// rolling/ and periods/ subfolders). The page fetches that manifest,
+// builds one plot card per station in the rolling and yesterday sections
+// (falling back to the X-ray only plots while no stations are configured),
+// shows the rolling and static multi-day plots when enabled, and shows a
 // freshness banner. All times are UTC.
 // ------------------------------------------------------------------------
 
@@ -278,21 +280,31 @@ function renderPeriodPlots(manifest, stations, fallback, timestamp) {
     }
     anyVisible = true;
     var label = PERIOD_LABELS[periodName];
+    // Rolling plot (hourly) plus the static complete-days plot (daily)
+    var variants = [
+      {key: periodName, suffix: " (rolling)"},
+      {key: "period" + periodName, suffix: " (complete days)"}
+    ];
 
-    if (stations.length === 0) {
-      if (fallback[periodName]) {
-        buildPlotCard(container, label + " \u2014 NOAA GOES X-ray flux (no aerials configured)",
-                      fallback[periodName], periodName + " X-ray plot", timestamp);
+    variants.forEach(function(variant) {
+      if (stations.length === 0) {
+        if (fallback[variant.key]) {
+          buildPlotCard(container,
+                        label + " \u2014 NOAA GOES X-ray flux (no aerials configured)" + variant.suffix,
+                        fallback[variant.key],
+                        periodName + " X-ray plot" + variant.suffix, timestamp);
+        }
+        return;
       }
-      return;
-    }
-    stations.forEach(function(station) {
-      if (station[periodName]) {
-        buildPlotCard(container, label + " \u2014 " + stationLabel(station),
-                      station[periodName],
-                      periodName + " plot for " + stationLabel(station),
-                      timestamp);
-      }
+      stations.forEach(function(station) {
+        if (station[variant.key]) {
+          buildPlotCard(container,
+                        label + " \u2014 " + stationLabel(station) + variant.suffix,
+                        station[variant.key],
+                        periodName + " plot for " + stationLabel(station) + variant.suffix,
+                        timestamp);
+        }
+      });
     });
   });
 

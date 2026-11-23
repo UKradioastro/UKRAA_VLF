@@ -9,6 +9,26 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Added
 
+- `scripts/PlotDataPeriod.py` + cron entries: static (midnight-aligned)
+  3-day and 7-day plots covering complete UTC days, produced daily after
+  the yesterday plots when the matching `3day`/`7day` section is enabled
+  in `config/plots.ini` (the same sections that control the rolling
+  multi-day plots). Shown on the web page alongside the rolling plots
+  ("(rolling)" / "(complete days)").
+- New `plots` entry in the `[paths]` section of `config/vlf.ini`
+  (default `<home>/plots/`): a date-structured plot archive
+  `plots/<CALLSIGN>/<type>/YYYY/YYYY-MM/<frequency_hz>-YYYY-MM-DD.png`
+  where `<type>` is `day` (yesterday plots), `3day` or `7day` (static
+  period plots); the X-ray only fallback plots archive under
+  `plots/NOAA/` as `NOAA-YYYY-MM-DD.png`. Rolling plots are snapshots
+  and are not archived.
+- `scripts/vlf_plot.py`: shared plotting helpers (data-file locations,
+  sun/night overlay assignments, gnuplot runner) used by
+  `PlotDataRolling.py`, `PlotDataPeriod.py` and `PlotDataYesterday.py`.
+- `scripts/MigratePlotsArchive.py`: one-off migration (with `--dry-run`)
+  that moves the old `<data>/Plots/` archive files into the new
+  `plots/` tree and deletes the old flat-layout PNGs from the temp
+  folder.
 - `scripts/GetDataAerial.py`: VLF aerial data capture from the ABElectronics
   ADC Pi - a measurement cycle every 10 seconds (:00, :10, :20 ... of each
   minute) on every channel configured in `aerials.ini`, taking a trimmed
@@ -76,6 +96,17 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Changed
 
+- The temp folder (served by Apache and, in future, uploaded by FTP) is
+  now organised into subfolders where the folder names the plot type and
+  the filename is the station frequency in Hz (`NOAA.png` for the X-ray
+  only fallback):
+  `rolling/day|3day|7day/<frequency_hz>.png` and
+  `periods/yesterday|3day|7day/<frequency_hz>.png`. The `plots.json`
+  manifest now carries these folder-relative paths (plus new
+  `period3day`/`period7day` entries), and `WWW/index.html` and the
+  `EvaluateAlerts.py` email attachments follow the manifest layout. The
+  yesterday-plot archive moved from `<data>/Plots/` to the new `plots/`
+  tree (run `MigratePlotsArchive.py` once on existing installations).
 - All plots are now 960x540 (previously the rolling and yesterday plots
   were 640x540), so every graph on the web page is the same width; the
   page's graph frames widened to match.

@@ -5,5 +5,6 @@
 home = /home/pi/UKRAA-VLF/
 data = /home/pi/UKRAA-VLF/data/
 logfiles = /home/pi/UKRAA-VLF/logfiles/
+plots = /home/pi/UKRAA-VLF/plots/
 scripts = /home/pi/UKRAA-VLF/scripts/
 temp = /home/pi/UKRAA-VLF/temp/
