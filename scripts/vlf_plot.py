@@ -140,6 +140,9 @@ def window_overlays(data_path, options, start, end, days):
                 assigns.append(f"SunMark{index}Label='{label}'")
     for index, path in enumerate(flare_files, 1):
         assigns.append(f"FlareFile{index}='{gp_path(path)}'")
+    # Hide flares peaking below the configured minimum class (0.0 = all)
+    if flare_files and options.get('min_flare_flux'):
+        assigns.append(f"FlareMinFlux={options['min_flare_flux']:g}")
 
     return xray_files, flare_files, assigns
 

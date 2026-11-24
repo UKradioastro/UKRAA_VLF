@@ -148,6 +148,9 @@ def main():
             assigns.append(f"XrayFile='{gp_path(xray_path)}'")
         if options['flares'] and os.path.isfile(flare_path):
             assigns.append(f"FlareFile='{gp_path(flare_path)}'")
+            # Hide flares peaking below the configured minimum class
+            if options.get('min_flare_flux'):
+                assigns.append(f"FlareMinFlux={options['min_flare_flux']:g}")
 
         output_label = f'periods/yesterday/{output_name}'
         if not have_data:

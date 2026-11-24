@@ -9,6 +9,12 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Added
 
+- `min_flare_class` key in each `config/plots.ini` section: only mark
+  solar flares whose peak reaches the given GOES class (e.g. `C1.0`
+  hides the B-class markers that make an active day busy). Empty or
+  absent marks every flare, the original behaviour. Affects the plot
+  markers only - alert emails and SID detection keep their own
+  thresholds.
 - BAA Radio Astronomy Group SID monthly reporting (see the "Optional BAA
   SID monthly report" section of the README):
   - `scripts/ExtractSIDEvents.py` + `scripts/PlotSIDEvent.gp`: daily cron

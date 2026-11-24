@@ -13,6 +13,14 @@
 ;   flares  : solar flare begin/end markers with class labels (a week of
 ;             C-class markers swamps the 7-day plot, so it defaults off)
 ;
+; Each section may also set (a GOES class string, not true/false):
+;   min_flare_class : only mark flares whose peak reaches this class,
+;             e.g. C1.0 hides the B-class markers that make an active
+;             day busy. Leave empty (or omit) to mark every flare, the
+;             original behaviour. Applies to the markers only - flare
+;             alert emails (alerts.ini) and SID event detection
+;             (baa-report.ini) have their own thresholds.
+;
 ; Notes:
 ;   - The 3day and 7day sections each control two plots: the rolling
 ;     3/7-day plot (refreshed hourly) and the static complete-days
@@ -27,21 +35,25 @@ enabled = true
 sun = true
 xray = true
 flares = true
+min_flare_class =
 
 [yesterday]
 enabled = true
 sun = true
 xray = true
 flares = true
+min_flare_class =
 
 [3day]
 enabled = false
 sun = false
 xray = true
 flares = true
+min_flare_class =
 
 [7day]
 enabled = false
 sun = false
 xray = true
 flares = false
+min_flare_class =

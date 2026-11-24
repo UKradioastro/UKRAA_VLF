@@ -360,6 +360,15 @@ Each plot section also has its own overlay switches (all true/false):
 * `xray` - NOAA GOES X-ray flux overlay (red, right-hand axis)
 * `flares` - solar flare begin/end markers with class labels (defaults off on the 7-day plot, which a week of C-class markers would swamp)
 
+Each section may also set `min_flare_class` - a GOES class string naming the smallest flare to mark, e.g.
+
+```ini
+[rolling]
+min_flare_class = C1.0
+```
+
+hides the B-class markers that make an active day busy. Leave it empty (or omit it) to mark every flare. This only affects the plot markers - the flare alert emails (alerts.ini) and SID event detection (baa-report.ini) have their own thresholds.
+
 [Back to Contents...](#contents)
 
 &nbsp;

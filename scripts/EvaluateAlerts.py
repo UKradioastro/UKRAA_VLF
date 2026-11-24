@@ -55,7 +55,8 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 from vlf_common import (CONFIG_FILE, TIME_FORMAT, load_aerials, load_paths,
-                        log_error, log_message, parse_bool, utc_now)
+                        log_error, log_message, parse_bool,
+                        parse_flare_class, utc_now)
 from vlf_mail import send_message
 
 SOURCE = 'EvaluateAlerts.py'
@@ -65,8 +66,8 @@ ALERTS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'alerts.ini')
 STATE_RETENTION_DAYS = 8    # matches the NOAA 7-day flare feed
 PLOT_STALE_MINUTES = 15     # rolling plots refresh every 5 minutes
 
-# GOES X-ray flare class letters: decade flux in W/m2 and severity rank
-LETTER_FLUX = {'A': 1e-8, 'B': 1e-7, 'C': 1e-6, 'M': 1e-5, 'X': 1e-4}
+# GOES X-ray flare class letters: severity rank (flux decades and the
+# class-string parser are shared via vlf_common.parse_flare_class)
 LETTER_RANK = {'A': 0, 'B': 1, 'C': 2, 'M': 3, 'X': 4}
 
 DEFAULT_THRESHOLD = 'C1.0'
@@ -77,20 +78,6 @@ DEFAULT_THRESHOLD = 'C1.0'
 # Configuration
 #
 # ==========================================================================================
-
-def parse_flare_class(text):
-    """Flare class string ("M2.5") -> (letter, flux W/m2), or None."""
-    text = (text or '').strip().upper()
-    if len(text) < 2 or text[0] not in LETTER_FLUX:
-        return None
-    try:
-        multiplier = float(text[1:])
-    except ValueError:
-        return None
-    if multiplier <= 0:
-        return None
-    return text[0], LETTER_FLUX[text[0]] * multiplier
-
 
 def load_settings(logfiles_path):
     """Return the alerts.ini settings with sensible defaults."""

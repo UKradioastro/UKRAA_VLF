@@ -7,6 +7,8 @@
 #              AerialTitle              (legend text for the aerial trace)
 #              XrayFile1..N             (one per day in the window)
 #              FlareFile1..N            (one per day in the window)
+#              FlareMinFlux             (W/m2; skip flares peaking below
+#                                       this, default 0 = mark them all)
 #              NightCount + Night<i>Start/Night<i>End
 #                                       (night shading, clipped to window)
 #              SunMarkCount + SunMark<i>Time/SunMark<i>Label
@@ -138,18 +140,21 @@ do for [i=1:MAXFILES] {
     }
 }
 # Flare markers sit on the X-ray (y2) axis: dotted vertical bars at the
-# flare begin and end times with the maximum class labelled above
+# flare begin and end times with the maximum class labelled above.
+# Flares whose peak flux (column 6) is below FlareMinFlux are skipped by
+# mapping their y value to 1/0 (gnuplot discards invalid points).
+if (!exists("FlareMinFlux")) { FlareMinFlux = 0 }
 FlareTitle = "Solar flare start/end with class"
 if (HaveXray) {
     do for [i=1:MAXFILES] {
         if (exists(sprintf("FlareFile%d", i))) {
             ff = value(sprintf("FlareFile%d", i))
-            cmd = cmd . sep . sprintf("'%s' using 1:($6/5):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' title '%s'", ff, FlareTitle)
+            cmd = cmd . sep . sprintf("'%s' using 1:($6>=FlareMinFlux ? $6/5 : 1/0):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' title '%s'", ff, FlareTitle)
             sep = ", "
             FlareTitle = ""
-            cmd = cmd . sep . sprintf("'%s' using 7:($6/5):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' notitle", ff)
+            cmd = cmd . sep . sprintf("'%s' using 7:($6>=FlareMinFlux ? $6/5 : 1/0):(0):($6*5-$6/5) axes x1y2 with vectors nohead dt 3 lw 1 lc rgb '#0000FF' notitle", ff)
             sep = ", "
-            cmd = cmd . sep . sprintf("'%s' using 1:($6*5):5 axes x1y2 with labels font 'sans,7' textcolor rgb '#0000FF' offset 0,0.6 notitle", ff)
+            cmd = cmd . sep . sprintf("'%s' using 1:($6>=FlareMinFlux ? $6*5 : 1/0):5 axes x1y2 with labels font 'sans,7' textcolor rgb '#0000FF' offset 0,0.6 notitle", ff)
             sep = ", "
         }
     }

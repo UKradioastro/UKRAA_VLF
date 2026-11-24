@@ -175,6 +175,24 @@ def load_aerials():
     return {'adc': adc, 'stations': stations}
 
 
+# GOES X-ray flare class letters: decade flux in W/m2
+LETTER_FLUX = {'A': 1e-8, 'B': 1e-7, 'C': 1e-6, 'M': 1e-5, 'X': 1e-4}
+
+
+def parse_flare_class(text):
+    """Flare class string ("M2.5") -> (letter, flux W/m2), or None."""
+    text = (text or '').strip().upper()
+    if len(text) < 2 or text[0] not in LETTER_FLUX:
+        return None
+    try:
+        multiplier = float(text[1:])
+    except ValueError:
+        return None
+    if multiplier <= 0:
+        return None
+    return text[0], LETTER_FLUX[text[0]] * multiplier
+
+
 # Per-plot-type display options (config/plots.ini); the defaults preserve
 # the original behaviour: rolling and yesterday plots with all overlays,
 # no 3/7-day plots.
@@ -193,9 +211,14 @@ PLOT_OPTION_DEFAULTS = {
 def load_plot_options():
     """Return the per-plot-type options from plots.ini, with defaults.
 
-    Returns {plot_type: {'enabled', 'sun', 'xray', 'flares'}} for the
-    types rolling, yesterday, 3day and 7day. Missing files, sections,
-    keys or unparseable values fall back to PLOT_OPTION_DEFAULTS.
+    Returns {plot_type: {'enabled', 'sun', 'xray', 'flares',
+    'min_flare_flux'}} for the types rolling, yesterday, 3day and 7day.
+    Missing files, sections, keys or unparseable values fall back to
+    PLOT_OPTION_DEFAULTS.
+
+    min_flare_flux is the peak flux (W/m2) of the min_flare_class key
+    ("C1.0" -> 1e-06); 0.0 (key absent, empty or invalid) marks every
+    flare, matching the original behaviour.
     """
     parser = configparser.ConfigParser()
     parser.read(PLOTS_FILE)
@@ -208,6 +231,9 @@ def load_plot_options():
                                                 fallback=fallback)
             except ValueError:
                 values[key] = fallback
+        min_class = parser.get(section, 'min_flare_class', fallback='')
+        parsed = parse_flare_class(min_class)
+        values['min_flare_flux'] = parsed[1] if parsed else 0.0
         options[section] = values
     return options
 
