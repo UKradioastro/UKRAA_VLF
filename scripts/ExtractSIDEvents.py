@@ -73,7 +73,8 @@ from vlf_common import (TIME_FORMAT, load_aerials, load_paths, log_error,
 from vlf_plot import aerial_file, flare_file, gp_path, run_gnuplot, xray_file
 from vlf_sid import (END_UNKNOWN, STATUS_CANDIDATE, candidates_file,
                      importance_from_minutes, load_baa_settings,
-                     read_candidates, write_candidates)
+                     read_candidates, write_candidates,
+                     write_events_manifest)
 
 SOURCE = 'ExtractSIDEvents.py'
 
@@ -366,6 +367,21 @@ def in_daylight(when, sunrise, sunset):
     return sunrise <= when <= sunset
 
 
+def refresh_manifest(paths, stations, day, logfiles_path):
+    """Refresh <temp>/events.json for the web page from the candidates
+    files of the current, previous and processed day's months (so review
+    status edits propagate even on days without new events)."""
+    today = utc_now().date()
+    previous = today.replace(day=1) - timedelta(days=1)
+    months = {f'{today:%Y-%m}', f'{previous:%Y-%m}', f'{day:%Y-%m}'}
+    try:
+        write_events_manifest(paths['temp'], paths['data'], stations,
+                              months)
+    except OSError as error:
+        log_error(logfiles_path, SOURCE,
+                  f'Failed to write events.json manifest: {error}')
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Extract candidate SID events for the BAA report')
@@ -402,6 +418,7 @@ def main():
                     f'No NOAA flare events recorded for {day:%Y-%m-%d} - '
                     'no candidate windows (check the NOAA data if '
                     'unexpected)')
+        refresh_manifest(paths, stations, day, logfiles_path)
         return 0
 
     sunrise_text, sunset_text = read_sun_times(data_path, day)
@@ -488,6 +505,8 @@ def main():
             log_message(logfiles_path, SOURCE,
                         f'Added {added} and updated {updated} '
                         f'candidate SID events in {path}')
+
+    refresh_manifest(paths, stations, day, logfiles_path)
 
     log_message(logfiles_path, SOURCE,
                 f'Completed SID event extraction for {day:%Y-%m-%d} - '

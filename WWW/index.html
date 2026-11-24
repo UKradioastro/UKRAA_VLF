@@ -26,6 +26,13 @@ body {font-family: "Lato", sans-serif}
 .graph-frame img {display: block; margin-left: auto; margin-right: auto; max-width: 960px}
 .plot-title {margin: 32px 0 8px}
 .plot-placeholder {border: 1px solid #777; margin: 16px auto; max-width: 800px; padding: 24px; text-align: center}
+.events-table {border-collapse: collapse; margin: 8px auto 24px; width: 100%; max-width: 960px}
+.events-table th, .events-table td {border: 1px solid #bbb; padding: 6px 10px; text-align: center}
+.events-table th {background: #333; color: #fff}
+.events-table td.notes {text-align: left}
+.status-candidate {background: #fff3cd}
+.status-reviewed {background: #d4edda}
+.status-rejected {background: #e2e3e5; color: #666}
 </style>
 <!-- End of Style -->
 </head>
@@ -47,6 +54,7 @@ body {font-family: "Lato", sans-serif}
         <a href="#rolling" class="w3-bar-item w3-button">ROLLING STATUS</a>
         <a href="#daily_Act" class="w3-bar-item w3-button">YESTERDAY'S GRAPHS</a>
         <a href="#periods" class="w3-bar-item w3-button" id="navPeriods" style="display:none">LONG PERIOD GRAPHS</a>
+        <a href="#events" class="w3-bar-item w3-button" id="navEvents" style="display:none">SID EVENTS</a>
       </div>
     </div>
     <a href="#contact" class="w3-bar-item w3-button w3-padding-large w3-hide-small">CONTACT</a>
@@ -60,6 +68,7 @@ body {font-family: "Lato", sans-serif}
   <a href="#rolling" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">ROLLING STATUS</a>
   <a href="#daily_Act" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()">YESTERDAY'S GRAPHS</a>
   <a href="#periods" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()" id="navDemoPeriods" style="display:none">LONG PERIOD GRAPHS</a>
+  <a href="#events" class="w3-bar-item w3-button w3-padding-large" onclick="myFunction()" id="navDemoEvents" style="display:none">SID EVENTS</a>
 </div>
 <!-- End of Navbar -->
 
@@ -147,6 +156,16 @@ body {font-family: "Lato", sans-serif}
     </div>
   </div>
 
+  <!-- Candidate SID events for the BAA report (written by ExtractSIDEvents.py) -->
+  <div class="w3-white" id="events" style="display:none">
+    <div class="w3-container w3-content w3-center w3-padding-64" style="max-width:1100px">
+      <h2 class="w3-wide">CANDIDATE SID EVENTS</h2>
+      <p class="w3-center">Automatically detected SID events awaiting review for the monthly BAA Radio Astronomy Group report</p>
+      <p class="w3-small w3-center">Times are the observer's corrections where entered, otherwise the automatic estimates (UTC). Review by editing the monthly candidates CSV under <b>data/SID_events/</b> - see the README.</p>
+      <div id="eventsContent"></div>
+    </div>
+  </div>
+
   <!-- The Contact Section -->
   <div class="w3-grey" id="contact">
     <div class="w3-container w3-content w3-padding-64" style="max-width:800px" >
@@ -212,6 +231,7 @@ function myFunction() {
 // ------------------------------------------------------------------------
 
 var MANIFEST_URL = "./temp/plots.json";
+var EVENTS_URL = "./temp/events.json";
 var STALE_AFTER_MINUTES = 15;   // rolling plots refresh every 5 minutes
 
 function showDefaultImage(image) {
@@ -419,6 +439,110 @@ function refreshPageData() {
     .catch(function() {
       setFreshnessUnavailable("Waiting for the plot scripts to write temp/plots.json.");
       showPlotPlaceholders("No plots available yet - waiting for the plot scripts to run.");
+    });
+  refreshEvents();
+}
+
+// ------------------------------------------------------------------------
+// Candidate SID events
+//
+// ExtractSIDEvents.py / ReportSIDMonth.py refresh temp/events.json
+// describing the recent candidate SID events per station (final times -
+// the observer's corrections where entered, otherwise the automatic
+// estimates - plus the review status and the review plot path relative
+// to the temp folder). The section stays hidden until the manifest
+// exists and contains at least one event.
+// ------------------------------------------------------------------------
+
+var EVENT_COLUMNS = ["Date", "Flare", "Class", "Start", "Peak", "End", "Importance", "Status", "Notes", "Plot"];
+
+function setEventsVisibility(isVisible) {
+  var displayValue = isVisible ? "block" : "none";
+  document.getElementById("events").style.display = displayValue;
+  document.getElementById("navEvents").style.display = displayValue;
+  document.getElementById("navDemoEvents").style.display = displayValue;
+}
+
+function buildEventRow(event, timestamp) {
+  var row = document.createElement("tr");
+  var status = (event.status || "").toLowerCase();
+  if (status) {
+    row.className = "status-" + status;
+  }
+  [event.date, event.goes_begin, event.goes_class, event.start,
+   event.peak, event.end, event.importance, event.status]
+    .forEach(function(value) {
+      var cell = document.createElement("td");
+      cell.textContent = value || "";
+      row.appendChild(cell);
+    });
+
+  var notes = document.createElement("td");
+  notes.className = "notes";
+  notes.textContent = event.notes || "";
+  row.appendChild(notes);
+
+  var plot = document.createElement("td");
+  if (event.plot) {
+    var link = document.createElement("a");
+    link.href = "./temp/" + event.plot + "?t=" + timestamp;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "view";
+    plot.appendChild(link);
+  }
+  row.appendChild(plot);
+  return row;
+}
+
+function renderEvents(manifest) {
+  var container = document.getElementById("eventsContent");
+  container.innerHTML = "";
+  var timestamp = Date.now();
+  var stations = Array.isArray(manifest.stations) ? manifest.stations : [];
+  var anyEvents = false;
+
+  stations.forEach(function(station) {
+    var events = Array.isArray(station.events) ? station.events : [];
+    if (events.length === 0) {
+      return;
+    }
+    anyEvents = true;
+
+    var title = document.createElement("h3");
+    title.className = "plot-title";
+    title.textContent = stationLabel(station);
+    container.appendChild(title);
+
+    var table = document.createElement("table");
+    table.className = "events-table";
+    var head = document.createElement("tr");
+    EVENT_COLUMNS.forEach(function(columnName) {
+      var cell = document.createElement("th");
+      cell.textContent = columnName;
+      head.appendChild(cell);
+    });
+    table.appendChild(head);
+    events.forEach(function(event) {
+      table.appendChild(buildEventRow(event, timestamp));
+    });
+    container.appendChild(table);
+  });
+
+  setEventsVisibility(anyEvents);
+}
+
+function refreshEvents() {
+  fetch(EVENTS_URL + "?t=" + Date.now(), { cache: "no-store" })
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error("events manifest fetch failed");
+      }
+      return response.json();
+    })
+    .then(renderEvents)
+    .catch(function() {
+      setEventsVisibility(false);
     });
 }
 

@@ -529,7 +529,7 @@ Detection sensitivity can be tuned in the `[detection]` section of `baa-report.i
 ~/UKRAA_VLF/data/SID_events/<CALLSIGN>/YYYY/YYYY-MM.csv
 ```
 
-and a review plot of the event (receiver trace, X-ray flux, flare markers and the estimated start/peak/end) is saved to the plots archive (`plots/<CALLSIGN>/events/...`) and to the RPi's web server, browsable at `http://<your-pi>.local/temp/events/`.
+and a review plot of the event (receiver trace, X-ray flux, flare markers and the estimated start/peak/end) is saved to the plots archive (`plots/<CALLSIGN>/events/...`) and to the RPi's web server. The intranet page (`http://<your-pi>.local`) gains a **CANDIDATE SID EVENTS** section - a table per station of the recent events (current and previous month) with their times, importance, review status and a link to each event plot, driven by a `temp/events.json` manifest that is refreshed by the nightly extraction and by `ReportSIDMonth.py`, so your review edits show up on the page. The section (and its navbar entry) stays hidden until there are events.
 
 A day can be reprocessed at any time (reviewed rows are never touched):
 
@@ -539,7 +539,7 @@ A day can be reprocessed at any time (reviewed rows are never touched):
 
 ### 2. Review the month's candidates
 
-Open the monthly candidates CSV in a text editor or spreadsheet. For each row, compare the automatic estimates (`est_*` columns) with the event plot, then:
+Open the monthly candidates CSV in a text editor or spreadsheet, with the **CANDIDATE SID EVENTS** section of the intranet page (or the plots under `temp/events/`) alongside. For each row, compare the automatic estimates (`est_*` columns) with the event plot, then:
 
 * enter corrected times in the `obs_start` / `obs_peak` / `obs_end` columns where needed (leave them blank to accept the estimates; use `?` for an end you cannot measure)
 * set `status` to `reviewed` to include the event in the report, or `rejected` to dismiss it (interference, transmitter drop-out, etc.)

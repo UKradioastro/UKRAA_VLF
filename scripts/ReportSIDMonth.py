@@ -64,7 +64,7 @@ from vlf_mail import attach_file, load_smtp_settings, send_message
 from vlf_sid import (END_UNKNOWN, IMPORTANCE_UNKNOWN, STATUS_CANDIDATE,
                      STATUS_REVIEWED, candidates_file,
                      importance_from_minutes, load_baa_settings,
-                     read_candidates)
+                     read_candidates, write_events_manifest)
 
 SOURCE = 'ReportSIDMonth.py'
 
@@ -360,6 +360,18 @@ def main():
                 print(f'{callsign}: FAILED to email the report - '
                       'see logfiles/logerror.log')
                 failures += 1
+
+    # Refresh the web page's events manifest so it reflects the latest
+    # review statuses (all configured stations, not just those reported)
+    today = utc_now().date()
+    previous = today.replace(day=1) - timedelta(days=1)
+    try:
+        write_events_manifest(paths['temp'], data_path,
+                              load_aerials()['stations'],
+                              {f'{today:%Y-%m}', f'{previous:%Y-%m}', month})
+    except OSError as error:
+        log_error(logfiles_path, SOURCE,
+                  f'Failed to write events.json manifest: {error}')
 
     log_message(logfiles_path, SOURCE, f'Completed SID report for {month}')
     return 1 if failures else 0

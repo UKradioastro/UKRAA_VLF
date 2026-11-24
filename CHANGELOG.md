@@ -35,7 +35,13 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
     email/safety switch and detection tuning (installed by install.sh as
     `config/baa-report.ini`, kept on re-run/upgrade).
   - `scripts/vlf_sid.py`: shared helpers (baa-report.ini loading, the SID
-    importance scale, candidates CSV handling).
+    importance scale, candidates CSV handling, the events.json manifest).
+  - `WWW/index.html`: new "CANDIDATE SID EVENTS" section (with navbar
+    entry) showing the recent candidate events per station - times,
+    importance, review status and a link to each event plot - from the
+    `temp/events.json` manifest refreshed by ExtractSIDEvents.py and
+    ReportSIDMonth.py. Hidden until events exist (and on remote sites,
+    where the manifest is not uploaded).
 - `scripts/vlf_mail.py`: shared outgoing-email helpers (the `[smtp]` /
   `[email]` settings from `alerts.ini`, message sending, attachments);
   `EvaluateAlerts.py` now uses it, so the SMTP server is configured once

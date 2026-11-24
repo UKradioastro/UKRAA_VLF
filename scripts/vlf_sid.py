@@ -28,9 +28,10 @@
 
 import configparser
 import csv
+import json
 import os
 
-from vlf_common import CONFIG_FILE, parse_bool
+from vlf_common import CONFIG_FILE, TIME_FORMAT, parse_bool, utc_now
 
 BAA_REPORT_FILE = os.path.join(os.path.dirname(CONFIG_FILE),
                                'baa-report.ini')
@@ -139,3 +140,64 @@ def write_candidates(path, rows):
                           key=lambda row: (row['date'], row['goes_begin'])):
             writer.writerow(row)
     os.replace(temp_path, path)
+
+
+def temp_plot_name(callsign, row):
+    """Filename of an event's review plot in <temp>/events/YYYY-MM/
+    (written by ExtractSIDEvents.py), relative to the temp folder."""
+    month = row['date'][:7]
+    stamp = row['goes_begin'].replace(':', '')
+    # Forward slashes: this is a URL path relative to temp
+    return f'events/{month}/{callsign}-{row["date"]}-{stamp}.png'
+
+
+def write_events_manifest(temp_path, data_path, stations, months):
+    """Write <temp>/events.json describing the candidate SID events for
+    the intranet web page (WWW/index.html).
+
+    The manifest is rebuilt from the monthly candidates files for the
+    given "YYYY-MM" months (normally the current and previous month), so
+    it reflects the observer's latest review statuses. Each event carries
+    the final values (the observer's obs_* corrections where entered,
+    otherwise the automatic estimates). Written atomically so the browser
+    never reads a half-written file.
+    """
+    station_entries = []
+    for station in stations:
+        events = []
+        for month in sorted(set(months), reverse=True):
+            path = candidates_file(data_path, station['callsign'], month)
+            for row in read_candidates(path):
+                events.append({
+                    'date': row['date'],
+                    'goes_begin': row['goes_begin'],
+                    'goes_class': row['goes_class'],
+                    'start': row['obs_start'] or row['est_start'],
+                    'peak': row['obs_peak'] or row['est_peak'],
+                    'end': row['obs_end'] or row['est_end'],
+                    'importance': (row['obs_importance']
+                                   or row['est_importance']),
+                    'status': row['status'],
+                    'notes': row['notes'],
+                    'plot': temp_plot_name(station['callsign'], row),
+                })
+        events.sort(key=lambda event: (event['date'], event['goes_begin']),
+                    reverse=True)
+        station_entries.append({
+            'callsign': station['callsign'],
+            'frequency_hz': station['frequency_hz'],
+            'events': events,
+        })
+
+    manifest = {
+        'generated_utc': f'{utc_now():{TIME_FORMAT}}',
+        'months': sorted(set(months), reverse=True),
+        'stations': station_entries,
+    }
+    os.makedirs(temp_path, exist_ok=True)
+    manifest_path = os.path.join(temp_path, 'events.json')
+    temp_file = manifest_path + '.tmp'
+    with open(temp_file, 'w') as output:
+        json.dump(manifest, output, indent=2)
+        output.write('\n')
+    os.replace(temp_file, manifest_path)
