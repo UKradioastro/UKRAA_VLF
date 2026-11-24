@@ -58,6 +58,13 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
+def parse_bool(text, fallback):
+    """Lenient true/false parsing for ini values; None -> fallback."""
+    if text is None:
+        return fallback
+    return text.strip().lower() in ('1', 'true', 'yes', 'y', 'on')
+
+
 def load_paths():
     """Return the [paths] settings from vlf.ini, with sensible defaults.
 

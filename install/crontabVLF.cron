@@ -60,6 +60,16 @@
 34 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/PlotDataPeriod.py --days 7 >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
 
 # ------------------------------------------------------------------------------------------
+# BAA SID reporting
+# ------------------------------------------------------------------------------------------
+
+# cron entry to extract yesterday's candidate SID events for the monthly
+# BAA report (see config/baa-report.ini) - daily at 00:40 UTC, after the
+# yesterday plots. The monthly report itself (ReportSIDMonth.py) is run
+# manually after the candidates have been reviewed.
+40 00 * * * /usr/bin/python3 /home/pi/UKRAA-VLF/scripts/ExtractSIDEvents.py >> /home/pi/UKRAA-VLF/logfiles/logerror.log 2>&1
+
+# ------------------------------------------------------------------------------------------
 # Alerting
 # ------------------------------------------------------------------------------------------
 

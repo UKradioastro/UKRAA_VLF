@@ -175,6 +175,7 @@ set_up_configuration "aerials / ADC" aerials
 set_up_configuration "plot" plots
 set_up_configuration "alert" alerts
 set_up_configuration "remote upload" remote-upload
+set_up_configuration "BAA SID report" baa-report
 
 
 # ------------------------------------------------------------------------------------------
@@ -330,7 +331,8 @@ echo "Next steps:"
 echo "  - set your station name/latitude/longitude in $BASE_PATH/config/user.ini"
 echo "  - set the callsign/frequency for each connected channel in $AERIALS_INI"
 echo "  - optional: email alerts in $BASE_PATH/config/alerts.ini, extra plots in"
-echo "    $BASE_PATH/config/plots.ini, FTP upload in $BASE_PATH/config/remote-upload.ini"
+echo "    $BASE_PATH/config/plots.ini, FTP upload in $BASE_PATH/config/remote-upload.ini,"
+echo "    BAA SID reports in $BASE_PATH/config/baa-report.ini"
 echo "  - after editing aerials.ini restart the capture service:"
 echo "      sudo systemctl restart ukraa-vlf-aerial.service"
 echo "  - the plots page is at http://${SHORT_HOSTNAME,,}.local (plots appear"

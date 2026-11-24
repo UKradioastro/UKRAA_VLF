@@ -1,0 +1,49 @@
+; UKRAA VLF - BAA Radio Astronomy Group SID report configuration
+; Copy to /home/pi/UKRAA-VLF/config/baa-report.ini and adjust as required.
+;
+; Used by ExtractSIDEvents.py (daily candidate SID detection) and
+; ReportSIDMonth.py (the monthly report - see the README for the review
+; and submission workflow).
+;
+; [observer] - details included at the top of every report
+;   name          : the observer's name as it should appear in the report
+;   baa_member_no : BAA membership number (blank = omitted)
+;   equipment     : a one-line description of the receiving equipment
+;
+; [report]
+;   coordinator_email : the BAA RAG VLF coordinator's email address
+;   cc_self           : also send submitted reports to the [email] "to"
+;                       list in alerts.ini
+;   send_enabled      : safety switch - ReportSIDMonth.py --email refuses
+;                       to send to the coordinator until this is true.
+;                       Emailing yourself a draft (--email-self) works
+;                       regardless. The report is never sent automatically.
+;
+; [detection] - tuning for the automatic SID candidate detection
+;   pre_minutes      : quiet minutes before the NOAA flare begin time used
+;                      to establish the baseline level and noise
+;   post_minutes     : minutes after the NOAA flare end (or begin, if no
+;                      end is reported) searched for the SID recovery
+;   min_departure_v  : smallest departure from the baseline (volts) that
+;                      counts as a SID, whatever the noise level
+;   noise_multiplier : departure must also exceed this multiple of the
+;                      measured baseline noise
+;
+; The outgoing mail server is configured once, in the [smtp] section of
+; alerts.ini (shared with the flare alert emails).
+
+[observer]
+name = Your Name
+baa_member_no =
+equipment = UKRAA VLF receiver, loop aerial, ADC Pi, Raspberry Pi
+
+[report]
+coordinator_email =
+cc_self = true
+send_enabled = false
+
+[detection]
+pre_minutes = 15
+post_minutes = 60
+min_departure_v = 0.05
+noise_multiplier = 4

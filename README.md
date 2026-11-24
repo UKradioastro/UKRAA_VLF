@@ -32,6 +32,7 @@ This software was written to suit a specific set-up; feel free to use as you see
 - [Optional 3-day and 7-day plots](#optional-3-day-and-7-day-plots)
 - [Optional flare alert Emails](#optional-flare-alert-emails)
 - [Optional Remote FTP upload](#optional-remote-ftp-upload)
+- [Optional BAA SID monthly report](#optional-baa-sid-monthly-report)
 - [Updating the software](#updating-the-software)
 - [Publishing a release](#publishing-a-release)
 - [License](#license)
@@ -245,6 +246,11 @@ These are configurable through the `alerts.ini` file, see the [Optional flare al
 There is the option of uploading all generated plots to an externally hosted webpage.
 
 This is configurable through the `remote-upload.ini` file, see the [Optional Remote FTP upload](#optional-remote-ftp-upload) section for details.
+
+#### BAA SID monthly report
+There is the option of automatic detection of candidate SID events (start, peak, end and importance measured from the receiver data around each NOAA flare), with a review workflow and a monthly report for submission to the British Astronomical Association Radio Astronomy Group.
+
+This is configurable through the `baa-report.ini` file, see the [Optional BAA SID monthly report](#optional-baa-sid-monthly-report) section for details.
 
 [Back to Contents...](#contents)
 
@@ -477,6 +483,89 @@ Manual test commands:
 /usr/bin/python3 ~/UKRAA_VLF/scripts/UploadDataWWW.py rolling
 /usr/bin/python3 ~/UKRAA_VLF/scripts/UploadDataWWW.py periods
 ```
+
+[Back to Contents...](#contents)
+
+&nbsp;
+
+---
+
+&nbsp;
+<!-- =============================================================================== -->
+## Optional BAA SID monthly report
+
+Within the **~/UKRAA_VLF/config** folder there is a file named **baa-report.ini**.
+
+The British Astronomical Association Radio Astronomy Group (BAA RAG) collects monthly VLF SID (Sudden Ionospheric Disturbance) observations in a five-field table: day, flare class, SID start, peak and end times (UTC) and an importance rating. The software can prepare this report in three stages: automatic daily candidate detection, observer review, and report generation/emailing. Reports are **never sent automatically** - submission is always a deliberate, manual act.
+
+First fill in your details in `baa-report.ini`:
+
+```ini
+[observer]
+name = Your Name
+baa_member_no =
+equipment = UKRAA VLF receiver, loop aerial, ADC Pi, Raspberry Pi
+
+[report]
+coordinator_email =
+cc_self = true
+send_enabled = false
+```
+
+Your location comes from `user.ini` and the transmitter callsign/frequency from `aerials.ini`, so they are not repeated here. Emailing uses the `[smtp]` server settings in `alerts.ini` (shared with the flare alert emails).
+
+### 1. Automatic candidate detection (daily, from cron)
+
+Each night (00:40 UTC) **ExtractSIDEvents.py** examines yesterday's data for every configured station. Each NOAA GOES X-ray flare that began between sunrise and sunset (and outside the transmitter's off-air window) defines a candidate window, and within it the SID **start, peak and end are measured from the receiver data** - the NOAA times are context only:
+
+* the baseline level and noise come from the quiet period before the flare
+* the peak is the largest departure from the baseline, so inverted (negative) SIDs are detected too
+* an end that cannot be measured (signal still disturbed at the window end, sunset, the next flare) is recorded as `?` with an unassigned importance of `-` - it is never invented
+* the importance rating follows the duration-based SID scale: `1-` under 19 minutes, `1` 19-25, `1+` 26-32, `2` 33-45, `2+` 46-85, `3` 86-125 and `3+` over 125 minutes
+
+Detection sensitivity can be tuned in the `[detection]` section of `baa-report.ini`. Each detected event is appended as a `candidate` row to the monthly candidates file:
+
+```
+~/UKRAA_VLF/data/SID_events/<CALLSIGN>/YYYY/YYYY-MM.csv
+```
+
+and a review plot of the event (receiver trace, X-ray flux, flare markers and the estimated start/peak/end) is saved to the plots archive (`plots/<CALLSIGN>/events/...`) and to the RPi's web server, browsable at `http://<your-pi>.local/temp/events/`.
+
+A day can be reprocessed at any time (reviewed rows are never touched):
+
+```
+/usr/bin/python3 ~/UKRAA_VLF/scripts/ExtractSIDEvents.py --date 2026-05-12
+```
+
+### 2. Review the month's candidates
+
+Open the monthly candidates CSV in a text editor or spreadsheet. For each row, compare the automatic estimates (`est_*` columns) with the event plot, then:
+
+* enter corrected times in the `obs_start` / `obs_peak` / `obs_end` columns where needed (leave them blank to accept the estimates; use `?` for an end you cannot measure)
+* set `status` to `reviewed` to include the event in the report, or `rejected` to dismiss it (interference, transmitter drop-out, etc.)
+* `notes` is yours to use; the `est_*` columns are the original estimates and are kept for traceability
+
+The importance is recalculated from your final start/end times, so you normally leave `obs_importance` blank; fill it in only to override the duration scale.
+
+### 3. Produce (and email) the report
+
+After reviewing, generate the report (by default for last month, one report per configured station):
+
+```
+/usr/bin/python3 ~/UKRAA_VLF/scripts/ReportSIDMonth.py
+/usr/bin/python3 ~/UKRAA_VLF/scripts/ReportSIDMonth.py --month 2026-05 --callsign DHO38
+```
+
+Only `reviewed` rows are included - any rows still in the `candidate` status are listed as a warning and excluded. The report (your observer/station details followed by the day/class/start/peak/end/importance table) is printed to the screen and written to:
+
+```
+~/UKRAA_VLF/data/SID_events/<CALLSIGN>/YYYY/BAA_<CALLSIGN>_YYYY-MM.csv
+```
+
+A month with no reviewed events still produces a nil return. To email the report CSV directly from the RPi, add:
+
+* `--email-self` - send it to the `[email]` "to" list in `alerts.ini`, e.g. to finish it off on your PC
+* `--email` - send it to the `coordinator_email`; as a safety measure this refuses to send until `send_enabled = true` is set in `baa-report.ini`
 
 [Back to Contents...](#contents)
 

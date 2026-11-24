@@ -50,19 +50,18 @@ import argparse
 import configparser
 import json
 import os
-import smtplib
 import sys
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 from vlf_common import (CONFIG_FILE, TIME_FORMAT, load_aerials, load_paths,
-                        log_error, log_message, utc_now)
+                        log_error, log_message, parse_bool, utc_now)
+from vlf_mail import send_message
 
 SOURCE = 'EvaluateAlerts.py'
 
 ALERTS_FILE = os.path.join(os.path.dirname(CONFIG_FILE), 'alerts.ini')
 
-SMTP_TIMEOUT = 30           # seconds
 STATE_RETENTION_DAYS = 8    # matches the NOAA 7-day flare feed
 PLOT_STALE_MINUTES = 15     # rolling plots refresh every 5 minutes
 
@@ -91,12 +90,6 @@ def parse_flare_class(text):
     if multiplier <= 0:
         return None
     return text[0], LETTER_FLUX[text[0]] * multiplier
-
-
-def parse_bool(text, fallback):
-    if text is None:
-        return fallback
-    return text.strip().lower() in ('1', 'true', 'yes', 'y', 'on')
 
 
 def load_settings(logfiles_path):
@@ -296,27 +289,7 @@ def send_email(settings, subject, body, attachments, to_override=''):
         except OSError:
             continue
 
-    try:
-        if settings['smtp_ssl']:
-            with smtplib.SMTP_SSL(settings['smtp_host'],
-                                  settings['smtp_port'],
-                                  timeout=SMTP_TIMEOUT) as server:
-                if settings['smtp_user']:
-                    server.login(settings['smtp_user'],
-                                 settings['smtp_password'])
-                server.send_message(message)
-        else:
-            with smtplib.SMTP(settings['smtp_host'], settings['smtp_port'],
-                              timeout=SMTP_TIMEOUT) as server:
-                if settings['smtp_starttls']:
-                    server.starttls()
-                if settings['smtp_user']:
-                    server.login(settings['smtp_user'],
-                                 settings['smtp_password'])
-                server.send_message(message)
-    except Exception as error:
-        return False, str(error)
-    return True, ''
+    return send_message(settings, message)
 
 
 def station_summary(stations):

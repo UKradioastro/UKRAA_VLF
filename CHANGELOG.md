@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses calendar versioning in the format `YYYY.MM.patch`.
 
+## [Unreleased]
+
+### Added
+
+- BAA Radio Astronomy Group SID monthly reporting (see the "Optional BAA
+  SID monthly report" section of the README):
+  - `scripts/ExtractSIDEvents.py` + `scripts/PlotSIDEvent.gp`: daily cron
+    job (00:40 UTC) that measures candidate SID start/peak/end times and
+    the duration-based importance rating from the receiver data around
+    each daytime NOAA GOES X-ray flare (inverted SIDs included; an
+    unmeasurable end is recorded as `?`/`-`, never invented), appends
+    them as reviewable `candidate` rows to
+    `data/SID_events/<CALLSIGN>/YYYY/YYYY-MM.csv` and saves a review plot
+    per event to `plots/<CALLSIGN>/events/...` and `<temp>/events/...`
+    (browsable on the intranet page's server). Detection is tunable in
+    `config/baa-report.ini`; reviewed rows are never modified when a day
+    is reprocessed (`--date YYYY-MM-DD`).
+  - `scripts/ReportSIDMonth.py`: manual monthly report generator -
+    includes only observer-`reviewed` events (observer obs_* corrections
+    override the estimates; importance is recalculated from the final
+    times), writes the BAA five-field table (Day, Class, Start, Peak,
+    End, Importance, all UTC) with the observer/station details to
+    `data/SID_events/<CALLSIGN>/YYYY/BAA_<CALLSIGN>_YYYY-MM.csv`, and can
+    email it from the RPi (`--email-self` for a draft to yourself;
+    `--email` to the coordinator, guarded by `send_enabled` in
+    `baa-report.ini`). Reports are never sent automatically.
+  - `install/baa-report.ini.example`: observer details, coordinator
+    email/safety switch and detection tuning (installed by install.sh as
+    `config/baa-report.ini`, kept on re-run/upgrade).
+  - `scripts/vlf_sid.py`: shared helpers (baa-report.ini loading, the SID
+    importance scale, candidates CSV handling).
+- `scripts/vlf_mail.py`: shared outgoing-email helpers (the `[smtp]` /
+  `[email]` settings from `alerts.ini`, message sending, attachments);
+  `EvaluateAlerts.py` now uses it, so the SMTP server is configured once
+  for both the flare alerts and the SID reports.
+
+### Changed
+
+- `scripts/vlf_common.py`: added the shared `parse_bool` helper
+  (moved from `EvaluateAlerts.py`).
+
 ## [2026.11.0] - 2026-11-23
 
 ### Added
