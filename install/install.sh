@@ -118,6 +118,78 @@ echo ""
 
 
 # ------------------------------------------------------------------------------------------
+# System configuration: WiFi reliability (power save off + watchdog sudo)
+# ------------------------------------------------------------------------------------------
+
+# The Pi Zero 2W's WiFi driver can hang and never reconnect, leaving the
+# Pi running but unreachable until it is power-cycled. Two defences:
+#  - disable WiFi power saving, the usual trigger for the dropouts
+#  - grant the passwordless sudo that the network watchdog cron job
+#    (scripts/checkNetwork.sh) needs to bounce the WiFi interface and,
+#    as a last resort, reboot the Pi
+
+echo "Disable WiFi power saving (prevents Pi Zero 2W WiFi dropouts)..."
+if [ -d /etc/NetworkManager ]; then
+	# Bookworm and later manage WiFi with NetworkManager
+	cat > /etc/NetworkManager/conf.d/ukraa-vlf-wifi-powersave-off.conf <<- 'EOF'
+	# Installed by UKRAA VLF install.sh - keep WiFi power saving off
+	# (the Pi Zero 2W WiFi tends to drop out and not recover with it on)
+	[connection]
+	wifi.powersave = 2
+	EOF
+	systemctl reload NetworkManager 2>/dev/null || true
+	echo "NetworkManager configured (wifi.powersave = 2)"
+elif command -v iw >/dev/null 2>&1; then
+	# older OS releases (dhcpcd/wpa_supplicant): oneshot unit applies it
+	# on every boot once the network is up
+	cat > /etc/systemd/system/ukraa-vlf-wifi-powersave.service <<- 'EOF'
+	# Installed by UKRAA VLF install.sh - keep WiFi power saving off
+	[Unit]
+	Description=UKRAA VLF - disable WiFi power saving
+	After=network.target
+
+	[Service]
+	Type=oneshot
+	ExecStart=/bin/sh -c 'for d in /sys/class/net/*/wireless; do [ -d "$d" ] && iw dev "$(basename "$(dirname "$d")")" set power_save off; done'
+
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+	systemctl daemon-reload
+	systemctl enable --now ukraa-vlf-wifi-powersave.service 2>/dev/null || true
+	echo "Systemd unit installed (ukraa-vlf-wifi-powersave.service)"
+else
+	echo "WARNING: neither NetworkManager nor iw found - disable WiFi"
+	echo "         power saving manually if the WiFi connection drops out"
+fi
+# apply immediately for this session too
+if command -v iw >/dev/null 2>&1; then
+	for wireless_dir in /sys/class/net/*/wireless; do
+		if [ -d "$wireless_dir" ]; then
+			iw dev "$(basename "$(dirname "$wireless_dir")")" set power_save off 2>/dev/null || true
+		fi
+	done
+fi
+echo ""
+
+echo "Grant the network watchdog its sudo permissions (/etc/sudoers.d/ukraa-vlf)..."
+cat > /etc/sudoers.d/ukraa-vlf <<- EOF
+	# Installed by UKRAA VLF install.sh - lets the network watchdog cron
+	# job (scripts/checkNetwork.sh, run as $FILE_OWNER) bounce the WiFi
+	# interface and reboot the Pi when connectivity cannot be restored
+	$FILE_OWNER ALL=(root) NOPASSWD: /usr/sbin/ip, /sbin/ip, /usr/sbin/iw, /sbin/iw, /usr/sbin/reboot, /sbin/reboot
+EOF
+chmod 440 /etc/sudoers.d/ukraa-vlf
+if ! visudo -cf /etc/sudoers.d/ukraa-vlf >/dev/null; then
+	echo "Invalid sudoers file generated - removing it" >&2
+	rm -f /etc/sudoers.d/ukraa-vlf
+	exit 1
+fi
+echo "Watchdog sudo permissions installed"
+echo ""
+
+
+# ------------------------------------------------------------------------------------------
 # Directory structure and log files
 # ------------------------------------------------------------------------------------------
 

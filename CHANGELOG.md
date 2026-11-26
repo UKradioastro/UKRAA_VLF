@@ -9,6 +9,18 @@ This project uses calendar versioning in the format `YYYY.MM.patch`.
 
 ### Added
 
+- WiFi watchdog for headless Pis - the Pi Zero 2W's WiFi can drop out
+  and stay dead until the Pi is power-cycled, leaving it collecting data
+  but unreachable and not uploading. `install/install.sh` now disables
+  WiFi power saving (the usual trigger; via NetworkManager configuration,
+  or a systemd oneshot unit on older OS releases) and installs a watchdog
+  cron job, `scripts/checkNetwork.sh` (every 5 minutes), that pings the
+  default gateway: on repeated failure it bounces the WiFi interface and,
+  if connectivity still does not return, reboots the Pi as a last resort
+  (at most once an hour, so a router/broadband outage cannot cause a
+  reboot loop). The watchdog's passwordless sudo for ip/iw/reboot is set
+  up in `/etc/sudoers.d/ukraa-vlf`. Re-run `install/install.sh` on an
+  existing installation to enable it.
 - `min_flare_class` key in each `config/plots.ini` section: only mark
   solar flares whose peak reaches the given GOES class (e.g. `C1.0`
   hides the B-class markers that make an active day busy). Empty or

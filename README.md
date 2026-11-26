@@ -228,6 +228,8 @@ A number of plots are produced with gnuplot:
 
 Dated copies of the daily plots are kept in a **plots/** archive.
 
+The installer also guards the WiFi connection, which on a Pi Zero 2W can drop out and stay dead until the Pi is power-cycled: WiFi power saving (the usual trigger) is switched off, and a watchdog cron job pings the router every 5 minutes - if the connection is lost it bounces the WiFi interface, and if that still doesn't bring it back it reboots the Pi as a last resort (at most once an hour), so a headless Pi recovers on its own.
+
 A simple web server and web page is set up on your RPi, so that you can view your VLF results on your desktop PC and/or smart phone when connected to your home network. To access the webpage, see the [VLF webpage](#vlf-webpage) section for details.
 
 ### Things it can do with selectable options
